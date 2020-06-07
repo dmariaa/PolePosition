@@ -12,6 +12,7 @@ public class PlayerController : NetworkBehaviour
 {
     #region Variables
 
+    public float arhoraElColor;
     public float otraVar;
 
     // axleInfo tiene que ser concurrentes?  No
