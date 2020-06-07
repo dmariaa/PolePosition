@@ -12,6 +12,8 @@ public class PlayerController : NetworkBehaviour
 {
     #region Variables
 
+    public float otraVar;
+
     // axleInfo tiene que ser concurrentes?  No
     [Header("Movement")] public List<AxleInfo> axleInfos;
     public float forwardMotorTorque = 100000;
