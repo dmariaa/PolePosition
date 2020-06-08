@@ -1,7 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using Mirror;
-using UnityEngine;
+﻿using UnityEngine;
 
 public class PlayerInfo : MonoBehaviour
 {
@@ -12,6 +9,10 @@ public class PlayerInfo : MonoBehaviour
     public int CurrentPosition { get; set; }
 
     public int CurrentLap { get; set; }
+
+    public Color Color { get; set; }
+    
+    public float ArcInfo { get; set; }
 
     public override string ToString()
     {
