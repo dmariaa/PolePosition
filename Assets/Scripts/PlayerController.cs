@@ -12,7 +12,6 @@ public class PlayerController : NetworkBehaviour
 {
     #region Variables
 
-    // axleInfo tiene que ser concurrentes?  No
     [Header("Movement")] public List<AxleInfo> axleInfos;
     public float forwardMotorTorque = 100000;
     public float backwardMotorTorque = 50000;
@@ -20,16 +19,19 @@ public class PlayerController : NetworkBehaviour
     public float engineBrake = 1e+12f;
     public float footBrake = 1e+24f;
     public float topSpeed = 200f;
-    public float downForce = 1000f;        // Poner a 1000, estaba a 100
+    public float downForce = 1000f;
     public float slipLimit = 0.2f;
 
-    private float CurrentRotation;
-    private float InputAcceleration;
-    private float InputSteering;
-    private float InputBrake;
+    // Entrada del usuario 
+    public float CurrentRotation { get; set; }
+    public float InputAcceleration { get; set; }
+    public float InputSteering { get; set; }
+    public float InputBrake { get; set; }
 
+    // Componentes
     private PlayerInfo m_PlayerInfo;
 
+    // Otras variables
     private Rigidbody m_Rigidbody;
     private float m_SteerHelper = 0.8f;
     private float m_CurrentSpeed = 0;
@@ -59,34 +61,10 @@ public class PlayerController : NetworkBehaviour
         m_Rigidbody = GetComponent<Rigidbody>();
         m_PlayerInfo = GetComponent<PlayerInfo>();
     }
-
-    public void Update()
-    {
-        if (isLocalPlayer)
-        {
-            CmdUpdateInputs(
-                Input.GetAxis("Vertical"),
-                Input.GetAxis("Horizontal"),
-                Input.GetAxis("Jump")
-                );    
-        }
-        
-        Speed = m_Rigidbody.velocity.magnitude;
-    }
-
-    [Command]
-    public void CmdUpdateInputs(float acceleration, float steering, float brake)
-    {
-        InputAcceleration = Mathf.Clamp(acceleration, -1, 1);
-        InputSteering = Mathf.Clamp(steering, -1, 1);
-        InputBrake = Mathf.Clamp(brake, 0, 1);
-        // Debug.LogFormat("CMDUPDATEINPUTS: InputSteering: {0}", InputSteering);
-    }
-
+    
     [ServerCallback]
     public void FixedUpdate()
     {
-        // Debug.LogFormat("FIXEDUPDATE: InputSteering: {0}", InputSteering);
         float steering = maxSteeringAngle * InputSteering;
 
         foreach (AxleInfo axleInfo in axleInfos)
