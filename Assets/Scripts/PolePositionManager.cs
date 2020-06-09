@@ -65,7 +65,7 @@ public class PolePositionManager : NetworkBehaviour
         for (int i = 0; i < m_Players.Count; ++i)
         {
             arcLengths[i] = ComputeCarArcLength(i);
-        }
+        }       
 
         m_Players.Sort(new PlayerInfoComparer(arcLengths));
 
@@ -88,11 +88,14 @@ public class PolePositionManager : NetworkBehaviour
         int segIdx;
         float carDist;
         Vector3 carProj;
+        Vector3 carDirection;
 
         float minArcL =
-            this.m_CircuitController.ComputeClosestPointArcLength(carPos, out segIdx, out carProj, out carDist);
+            this.m_CircuitController.ComputeClosestPointArcLength(carPos, out carDirection,out segIdx, out carProj, out carDist);
 
         this.m_DebuggingSpheres[ID].transform.position = carProj;
+        this.m_Players[ID].PosCentral = carProj;
+        this.m_Players[ID].PuntoLookAt = carDirection;
 
         if (this.m_Players[ID].CurrentLap == 0)
         {
@@ -104,6 +107,7 @@ public class PolePositionManager : NetworkBehaviour
                        (m_Players[ID].CurrentLap - 1);
         }
 
+       
         return minArcL;
     }
 }

@@ -40,7 +40,7 @@ public class CircuitController : MonoBehaviour
         return m_PathPos[idx + 1] - m_PathPos[idx];
     }
 
-    public float ComputeClosestPointArcLength(Vector3 posIn, out int segIdx, out Vector3 posProjOut, out float distOut)
+    public float ComputeClosestPointArcLength(Vector3 posIn, out Vector3 direccion, out int segIdx, out Vector3 posProjOut, out float distOut)
     {
         int minSegIdx = 0;
         float minArcL = float.NegativeInfinity;
@@ -93,6 +93,13 @@ public class CircuitController : MonoBehaviour
         segIdx = minSegIdx;
         posProjOut = minProj;
         distOut = minDist;
+
+        var sigPos = segIdx + 1;
+        if (sigPos == m_PathPos.Length)
+        {
+            sigPos = 0;
+        }
+        direccion = m_PathPos[sigPos];
 
         return minArcL;
     }

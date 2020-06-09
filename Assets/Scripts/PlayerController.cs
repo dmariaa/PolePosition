@@ -32,6 +32,8 @@ public class PlayerController : NetworkBehaviour
 
     private Rigidbody m_Rigidbody;
     private float m_SteerHelper = 0.8f;
+    
+    private float maxDistanciaRecorrida=0;
 
 
     private float m_CurrentSpeed = 0;
@@ -116,6 +118,11 @@ public class PlayerController : NetworkBehaviour
                 {
                     axleInfo.leftWheel.brakeTorque = footBrake;
                     axleInfo.rightWheel.brakeTorque = footBrake;
+
+                    if (EstoyVolcado())      
+                    {
+                        Recolocado();
+                    }
                 }
             }
 
@@ -132,7 +139,19 @@ public class PlayerController : NetworkBehaviour
     #endregion
 
     #region Methods
-
+    //recoloca el coche en el centyro de la carretera horientado en la direccion correcta
+    private void Recolocado()
+    {
+        Vector3 pos = new Vector3(m_PlayerInfo.PosCentral.x, 0.51f, m_PlayerInfo.PosCentral.z);
+        transform.position = pos;
+        Vector3 rot = m_PlayerInfo.PuntoLookAt;
+        transform.LookAt(new Vector3(rot.x, transform.position.y, rot.z));
+    }
+    //Indica si el coche está volcado
+    private bool EstoyVolcado()
+    {
+        return Mathf.Abs(transform.rotation.eulerAngles.z) > 25 && Mathf.Abs(transform.rotation.eulerAngles.z) < 335;
+    }
     // crude traction control that reduces the power to wheel if the car is wheel spinning too much
     private void TractionControl()
     {

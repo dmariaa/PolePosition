@@ -38,8 +38,9 @@ public class CameraController : MonoBehaviour
                 int segIdx;
                 float carDist;
                 Vector3 carProj;
+                Vector3 carDirection;
 
-                m_Circuit.ComputeClosestPointArcLength(m_Focus.transform.position, out segIdx, out carProj,
+                m_Circuit.ComputeClosestPointArcLength(m_Focus.transform.position,out carDirection, out segIdx, out carProj,
                     out carDist);
 
                 Vector3 pathDir = -m_Circuit.GetSegment(segIdx);
