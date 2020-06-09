@@ -160,7 +160,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   syncMode: 0
   syncInterval: 0.1
-  clientAuthority: 1
+  clientAuthority: 0
   localPositionSensitivity: 0.01
   localRotationSensitivity: 0.01
   localScaleSensitivity: 0.01
@@ -178,6 +178,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   syncMode: 0
   syncInterval: 0.1
+  m_Position: 0
 --- !u!114 &3466774584401487325
 MonoBehaviour:
   m_ObjectHideFlags: 0

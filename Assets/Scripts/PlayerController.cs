@@ -23,10 +23,10 @@ public class PlayerController : NetworkBehaviour
     public float downForce = 1000f;        // Poner a 1000, estaba a 100
     public float slipLimit = 0.2f;
 
-    private float CurrentRotation { get; set; }
-    private float InputAcceleration { get; set; }
-    private float InputSteering { get; set; }
-    private float InputBrake { get; set; }
+    private float CurrentRotation;
+    private float InputAcceleration;
+    private float InputSteering;
+    private float InputBrake;
 
     private PlayerInfo m_PlayerInfo;
 
@@ -62,18 +62,31 @@ public class PlayerController : NetworkBehaviour
 
     public void Update()
     {
-        InputAcceleration = Input.GetAxis("Vertical");
-        InputSteering = Input.GetAxis(("Horizontal"));
-        InputBrake = Input.GetAxis("Jump");
+        if (isLocalPlayer)
+        {
+            CmdUpdateInputs(
+                Input.GetAxis("Vertical"),
+                Input.GetAxis("Horizontal"),
+                Input.GetAxis("Jump")
+                );    
+        }
+        
         Speed = m_Rigidbody.velocity.magnitude;
     }
 
+    [Command]
+    public void CmdUpdateInputs(float acceleration, float steering, float brake)
+    {
+        InputAcceleration = Mathf.Clamp(acceleration, -1, 1);
+        InputSteering = Mathf.Clamp(steering, -1, 1);
+        InputBrake = Mathf.Clamp(brake, 0, 1);
+        // Debug.LogFormat("CMDUPDATEINPUTS: InputSteering: {0}", InputSteering);
+    }
+
+    [ServerCallback]
     public void FixedUpdate()
     {
-        InputSteering = Mathf.Clamp(InputSteering, -1, 1);
-        InputAcceleration = Mathf.Clamp(InputAcceleration, -1, 1);
-        InputBrake = Mathf.Clamp(InputBrake, 0, 1);
-
+        // Debug.LogFormat("FIXEDUPDATE: InputSteering: {0}", InputSteering);
         float steering = maxSteeringAngle * InputSteering;
 
         foreach (AxleInfo axleInfo in axleInfos)
@@ -126,11 +139,9 @@ public class PlayerController : NetworkBehaviour
         AddDownForce();
         TractionControl();
     }
-
     #endregion
 
     #region Methods
-
     // crude traction control that reduces the power to wheel if the car is wheel spinning too much
     private void TractionControl()
     {
@@ -155,7 +166,7 @@ public class PlayerController : NetworkBehaviour
         }
     }
 
-// this is used to add more grip in relation to speed
+    // this is used to add more grip in relation to speed
     private void AddDownForce()
     {
         foreach (var axleInfo in axleInfos)
@@ -172,8 +183,8 @@ public class PlayerController : NetworkBehaviour
             m_Rigidbody.velocity = topSpeed * m_Rigidbody.velocity.normalized;
     }
 
-// finds the corresponding visual wheel
-// correctly applies the transform
+    // finds the corresponding visual wheel
+    // correctly applies the transform
     public void ApplyLocalPositionToVisuals(WheelCollider col)
     {
         if (col.transform.childCount == 0)
@@ -204,7 +215,7 @@ public class PlayerController : NetworkBehaviour
             }
         }
 
-// this if is needed to avoid gimbal lock problems that will make the car suddenly shift direction
+        // this if is needed to avoid gimbal lock problems that will make the car suddenly shift direction
         if (Mathf.Abs(CurrentRotation - transform.eulerAngles.y) < 10f)
         {
             var turnAdjust = (transform.eulerAngles.y - CurrentRotation) * m_SteerHelper;
@@ -214,6 +225,5 @@ public class PlayerController : NetworkBehaviour
 
         CurrentRotation = transform.eulerAngles.y;
     }
-
     #endregion
 }
