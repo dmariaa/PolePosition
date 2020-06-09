@@ -23,6 +23,8 @@ public class SetupPlayer : NetworkBehaviour
     private PlayerInfo m_PlayerInfo;
     private PolePositionManager m_PolePositionManager;
     private Material m_BodyMaterial;
+    
+    private PlayerInputController _playerInputController;
 
     #region Start & Stop Callbacks
 
@@ -79,6 +81,9 @@ public class SetupPlayer : NetworkBehaviour
         m_PolePositionManager = FindObjectOfType<PolePositionManager>();
         m_UIManager = FindObjectOfType<UIManager>();
         
+        // Controller for player input
+        _playerInputController = GetComponent<PlayerInputController>();
+        
         // Gets the body material to update color
         Transform carBody = transform.Find("raceCar").Find("body");
         m_BodyMaterial = carBody.GetComponent<Renderer>().materials[1];
@@ -89,7 +94,7 @@ public class SetupPlayer : NetworkBehaviour
     {
         if (isLocalPlayer)
         {
-            m_PlayerController.enabled = true;
+            _playerInputController.enabled = true;
             m_PlayerController.OnSpeedChangeEvent += OnSpeedChangeEventHandler;
             m_UIManager.OnPlayerReady += OnPlayerStartEventHandler;
             ConfigureCamera();

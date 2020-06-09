@@ -862,9 +862,7 @@ MonoBehaviour:
   syncInterval: 0.1
   numPlayers: 0
   networkManager: {fileID: 2140735090}
-  MinimumNumberOfPlayers: 2
-  QualifyingRound: 1
-  NumberOfRounds: 3
+  uiManager: {fileID: 0}
 --- !u!4 &1839589614
 Transform:
   m_ObjectHideFlags: 0
@@ -1193,7 +1191,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 2140735089}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c7424c1070fad4ba2a7a96b02fbeb4bb, type: 3}
+  m_Script: {fileID: 11500000, guid: ec862738267237f4d91e6454ff15f4ea, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   OnClientConnected:
@@ -1220,10 +1218,15 @@ MonoBehaviour:
   OnServerDisconnected:
     m_PersistentCalls:
       m_Calls: []
-  port: 7777
-  NoDelay: 1
-  serverMaxMessageSize: 16384
-  clientMaxMessageSize: 16384
+  DebugEnabled: 0
+  ServerBindAll: 1
+  ServerBindAddress: 127.0.0.1
+  CommunicationPort: 7777
+  MaximumPeerCCU: 4095
+  EnetPollTimeout: 1
+  MaxPacketSizeInKb: 16
+  Channels: 0100000002000000
+  StatisticsCalculationInterval: 3
 --- !u!4 &2140735093
 Transform:
   m_ObjectHideFlags: 0
