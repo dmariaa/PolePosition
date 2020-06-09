@@ -12,7 +12,6 @@ public class PlayerController : NetworkBehaviour
 {
     #region Variables
 
-    // axleInfo tiene que ser concurrentes?  No
     [Header("Movement")] public List<AxleInfo> axleInfos;
     public float forwardMotorTorque = 100000;
     public float backwardMotorTorque = 50000;
@@ -20,16 +19,19 @@ public class PlayerController : NetworkBehaviour
     public float engineBrake = 1e+12f;
     public float footBrake = 1e+24f;
     public float topSpeed = 200f;
-    public float downForce = 1000f;        // Poner a 1000, estaba a 100
+    public float downForce = 1000f;
     public float slipLimit = 0.2f;
 
-    private float CurrentRotation { get; set; }
-    private float InputAcceleration { get; set; }
-    private float InputSteering { get; set; }
-    private float InputBrake { get; set; }
+    // Entrada del usuario 
+    public float CurrentRotation { get; set; }
+    public float InputAcceleration { get; set; }
+    public float InputSteering { get; set; }
+    public float InputBrake { get; set; }
 
+    // Componentes
     private PlayerInfo m_PlayerInfo;
 
+    // Otras variables
     private Rigidbody m_Rigidbody;
     private float m_SteerHelper = 0.8f;
     private float m_CurrentSpeed = 0;
@@ -59,21 +61,10 @@ public class PlayerController : NetworkBehaviour
         m_Rigidbody = GetComponent<Rigidbody>();
         m_PlayerInfo = GetComponent<PlayerInfo>();
     }
-
-    public void Update()
-    {
-        InputAcceleration = Input.GetAxis("Vertical");
-        InputSteering = Input.GetAxis(("Horizontal"));
-        InputBrake = Input.GetAxis("Jump");
-        Speed = m_Rigidbody.velocity.magnitude;
-    }
-
+    
+    [ServerCallback]
     public void FixedUpdate()
     {
-        InputSteering = Mathf.Clamp(InputSteering, -1, 1);
-        InputAcceleration = Mathf.Clamp(InputAcceleration, -1, 1);
-        InputBrake = Mathf.Clamp(InputBrake, 0, 1);
-
         float steering = maxSteeringAngle * InputSteering;
 
         foreach (AxleInfo axleInfo in axleInfos)
@@ -126,11 +117,9 @@ public class PlayerController : NetworkBehaviour
         AddDownForce();
         TractionControl();
     }
-
     #endregion
 
     #region Methods
-
     // crude traction control that reduces the power to wheel if the car is wheel spinning too much
     private void TractionControl()
     {
@@ -155,7 +144,7 @@ public class PlayerController : NetworkBehaviour
         }
     }
 
-// this is used to add more grip in relation to speed
+    // this is used to add more grip in relation to speed
     private void AddDownForce()
     {
         foreach (var axleInfo in axleInfos)
@@ -172,8 +161,8 @@ public class PlayerController : NetworkBehaviour
             m_Rigidbody.velocity = topSpeed * m_Rigidbody.velocity.normalized;
     }
 
-// finds the corresponding visual wheel
-// correctly applies the transform
+    // finds the corresponding visual wheel
+    // correctly applies the transform
     public void ApplyLocalPositionToVisuals(WheelCollider col)
     {
         if (col.transform.childCount == 0)
@@ -204,7 +193,7 @@ public class PlayerController : NetworkBehaviour
             }
         }
 
-// this if is needed to avoid gimbal lock problems that will make the car suddenly shift direction
+        // this if is needed to avoid gimbal lock problems that will make the car suddenly shift direction
         if (Mathf.Abs(CurrentRotation - transform.eulerAngles.y) < 10f)
         {
             var turnAdjust = (transform.eulerAngles.y - CurrentRotation) * m_SteerHelper;
@@ -214,6 +203,5 @@ public class PlayerController : NetworkBehaviour
 
         CurrentRotation = transform.eulerAngles.y;
     }
-
     #endregion
 }
