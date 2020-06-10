@@ -1,113 +1,107 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Text;
 using Mirror;
+using PolePosition.Player;
 using UnityEngine;
 
-public class PolePositionManager : NetworkBehaviour
+namespace PolePosition
 {
-    public int numPlayers;
-    public NetworkManager networkManager;
-
-    private readonly List<PlayerInfo> m_Players = new List<PlayerInfo>(4);
-    private CircuitController m_CircuitController;
-    private GameObject[] m_DebuggingSpheres;
-
-    private void Awake()
+    public class PolePositionManager : NetworkBehaviour
     {
-        if (networkManager == null) networkManager = FindObjectOfType<NetworkManager>();
-        if (m_CircuitController == null) m_CircuitController = FindObjectOfType<CircuitController>();
-
-        m_DebuggingSpheres = new GameObject[networkManager.maxConnections];
-        for (int i = 0; i < networkManager.maxConnections; ++i)
+        public int MaxNumPlayers = 4;
+        public UIManager uiManager;
+        public CircuitController m_CircuitController;
+    
+        private readonly Dictionary<int, PlayerInfo> m_Players = new Dictionary<int, PlayerInfo>();
+        private GameObject[] m_DebuggingSpheres;
+    
+        private void Awake()
         {
-            m_DebuggingSpheres[i] = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            m_DebuggingSpheres[i].GetComponent<SphereCollider>().enabled = false;
-        }
-    }
+            if (uiManager == null) uiManager = FindObjectOfType<UIManager>();
+            if (m_CircuitController == null) m_CircuitController = FindObjectOfType<CircuitController>();
 
-    private void Update()
-    {
-        if (m_Players.Count == 0)
-            return;
-
-        UpdateRaceProgress();
-    }
-
-    public void AddPlayer(PlayerInfo player)
-    {
-        m_Players.Add(player);
-    }
-
-    private class PlayerInfoComparer : Comparer<PlayerInfo>
-    {
-        float[] m_ArcLengths;
-
-        public PlayerInfoComparer(float[] arcLengths)
-        {
-            m_ArcLengths = arcLengths;
+            m_DebuggingSpheres = new GameObject[MaxNumPlayers];
+            for (int i = 0; i < MaxNumPlayers; ++i)
+            {
+                m_DebuggingSpheres[i] = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                m_DebuggingSpheres[i].GetComponent<SphereCollider>().enabled = false;
+            }
         }
 
-        public override int Compare(PlayerInfo x, PlayerInfo y)
+        [ServerCallback]
+        private void Update()
         {
-            if (this.m_ArcLengths[x.ID] < m_ArcLengths[y.ID])
-                return 1;
-            else return -1;
-        }
-    }
+            if (m_Players.Count == 0)
+                return;
 
-    public void UpdateRaceProgress()
-    {
-        // Update car arc-lengths
-        float[] arcLengths = new float[m_Players.Count];
-
-        for (int i = 0; i < m_Players.Count; ++i)
-        {
-            arcLengths[i] = ComputeCarArcLength(i);
-        }       
-
-        m_Players.Sort(new PlayerInfoComparer(arcLengths));
-
-        string myRaceOrder = "";
-        foreach (var _player in m_Players)
-        {
-            myRaceOrder += _player.Name + " ";
+            UpdateRaceProgress();
         }
 
-        Debug.Log("El orden de carrera es: " + myRaceOrder);
-    }
-
-    float ComputeCarArcLength(int ID)
-    {
-        // Compute the projection of the car position to the closest circuit 
-        // path segment and accumulate the arc-length along of the car along
-        // the circuit.
-        Vector3 carPos = this.m_Players[ID].transform.position;
-
-        int segIdx;
-        float carDist;
-        Vector3 carProj;
-        Vector3 carDirection;
-
-        float minArcL =
-            this.m_CircuitController.ComputeClosestPointArcLength(carPos, out carDirection,out segIdx, out carProj, out carDist);
-
-        this.m_DebuggingSpheres[ID].transform.position = carProj;
-        this.m_Players[ID].PosCentral = carProj;
-        this.m_Players[ID].PuntoLookAt = carDirection;
-
-        if (this.m_Players[ID].CurrentLap == 0)
+        public void AddPlayer(PlayerInfo player)
         {
-            minArcL -= m_CircuitController.CircuitLength;
-        }
-        else
-        {
-            minArcL += m_CircuitController.CircuitLength *
-                       (m_Players[ID].CurrentLap - 1);
+            m_Players.Add(player.ID, player);
+            // uiManager.UpdatePlayersPositions(player);
         }
 
-       
-        return minArcL;
+        public void RemovePlayer(PlayerInfo player)
+        {
+            m_Players.Remove(player.ID);
+        }
+
+        public void UpdateRaceProgress()
+        {
+            // Update car arc-lengths
+            KeyValuePair<int, float>[] arcLengths = new KeyValuePair<int, float>[m_Players.Count];
+            int i = 0;
+            foreach (var player in m_Players)
+            {
+                PlayerInfo playerInfo = player.Value;
+                ComputeCarArcLength(ref playerInfo);
+                arcLengths[i++] = new KeyValuePair<int, float>(playerInfo.ID, playerInfo.ArcInfo);
+            }
+        
+            Array.Sort(arcLengths, (one, other) => one.Value < other.Value ? 1 : -1);
+            i = 1;
+            foreach (var arcLength in arcLengths)
+            {
+                PlayerInfo playerInfo = m_Players[arcLength.Key];
+                playerInfo.CurrentPosition = i++;
+                // uiManager.UpdatePlayersPositions(playerInfo);
+            }
+        }
+
+        float ComputeCarArcLength(ref PlayerInfo player)
+        {
+            // Compute the projection of the car position to the closest circuit 
+            // path segment and accumulate the arc-length along of the car along
+            // the circuit.
+            Vector3 carPos = player.transform.position;
+            int ID = player.ID;
+
+            int segIdx;
+            float carDist;
+            Vector3 carProj;
+            Vector3 carDirection;
+
+            float minArcL =
+                this.m_CircuitController.ComputeClosestPointArcLength(carPos, out carDirection,out segIdx, out carProj, out carDist);
+
+            this.m_DebuggingSpheres[ID].transform.position = carProj;
+
+            if (this.m_Players[ID].CurrentLap == 0)
+            {
+                minArcL -= m_CircuitController.CircuitLength;
+            }
+            else
+            {
+                minArcL += m_CircuitController.CircuitLength *
+                           (m_Players[ID].CurrentLap - 1);
+            }
+
+            player.PosCentral = carProj;
+            player.PuntoLookAt = carDirection;
+            player.ArcInfo = minArcL;
+            return minArcL;
+        }
     }
 }
