@@ -1,10 +1,13 @@
 ﻿using UnityEngine;
 
-[System.Serializable]
-public class AxleInfo
+namespace PolePosition
 {
-    public WheelCollider leftWheel;
-    public WheelCollider rightWheel;
-    public bool motor;
-    public bool steering;
+    [System.Serializable]
+    public class AxleInfo
+    {
+        public WheelCollider leftWheel;
+        public WheelCollider rightWheel;
+        public bool motor;
+        public bool steering;
+    }
 }
