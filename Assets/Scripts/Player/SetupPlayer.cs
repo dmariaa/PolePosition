@@ -1,4 +1,5 @@
 ﻿using Mirror;
+using System.Threading;
 using UnityEngine;
 using Random = System.Random;
 
@@ -19,18 +20,19 @@ namespace PolePosition.Player
         private Material m_BodyMaterial;
 
         private PlayerInputController _playerInputController;
-        
+
         private void Awake()
         {
+
             m_PlayerInfo = GetComponent<PlayerInfo>();
             m_PlayerController = GetComponent<PlayerController>();
             m_NetworkManager = FindObjectOfType<NetworkManager>();
             m_PolePositionManager = FindObjectOfType<PolePositionManager>();
             m_UIManager = FindObjectOfType<UIManager>();
-        
+
             // Controller for player input
             _playerInputController = GetComponent<PlayerInputController>();
-        
+
             // Gets the body material to update color
             Transform carBody = transform.Find("raceCar").Find("body");
             m_BodyMaterial = carBody.GetComponent<Renderer>().materials[1];
@@ -39,15 +41,11 @@ namespace PolePosition.Player
         // Start is called before the first frame update
         void Start()
         {
+            _playerInputController.enabled = false;
+
             if (isLocalPlayer)
             {
-                _playerInputController.enabled = true;
-                m_PlayerController.OnSpeedChangeEvent += OnSpeedChangeEventHandler;
                 ConfigureCamera();
-            }
-            else
-            {
-                _playerInputController.enabled = false;
             }
         }
 
@@ -55,7 +53,7 @@ namespace PolePosition.Player
         {
             SetSpeed(speed);
         }
-        
+
         void ConfigureCamera()
         {
             if (Camera.main != null) Camera.main.gameObject.GetComponent<CameraController>().m_Focus = this.gameObject;
@@ -66,20 +64,34 @@ namespace PolePosition.Player
             m_UIManager.UpdatePlayersPositions(m_PlayerInfo);
         }
 
+        public void StartPlayerController()
+        {    
+            if (isLocalPlayer)
+            {
+                _playerInputController.enabled = true;
+            }
+        }
+
         public void SetSpeed(float speed)
         {
-            m_UIManager.UpdateSpeed((int) speed * 5); // 5 for visualization purpose (km/h)
+            m_UIManager.UpdateSpeed((int)speed * 5); // 5 for visualization purpose (km/h)
         }
 
         public void SetPlayerName(string name)
         {
-            m_UIManager.SetConfigUIName(name);
+            if (isLocalPlayer)
+            {
+                m_UIManager.SetConfigUIName(name);
+            }
         }
 
         public void SetPlayerColor(Color color)
         {
             m_BodyMaterial.color = color;
-            m_UIManager.SetConfigUIColor(color);
+            if (isLocalPlayer)
+            {
+                m_UIManager.SetConfigUIColor(color);
+            }
         }
     }
 }

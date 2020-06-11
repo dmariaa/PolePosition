@@ -17,14 +17,17 @@ namespace PolePosition
         [SerializeField] private Button buttonServer;
         [SerializeField] private InputField inputFieldIP;
 
-        [Header("In-Game HUD")] [SerializeField]
+        [Header("In-Game HUD")]
+        [SerializeField]
         private GameObject inGameHUD;
 
         [SerializeField] private Text textSpeed;
         [SerializeField] private Text textLaps;
         [SerializeField] private Text[] textPositions;
+        [SerializeField] private Text textCountdown;
 
-        [Header("Player Setup")] [SerializeField]
+        [Header("Player Setup")]
+        [SerializeField]
         private GameObject playerSetup;
 
         [SerializeField] private InputField _playerName;
@@ -43,7 +46,7 @@ namespace PolePosition
             buttonClient.onClick.AddListener(() => StartClient());
             buttonServer.onClick.AddListener(() => StartServer());
             _readyButton.onClick.AddListener(() => PlayerReady());
-        
+
             ActivateMainMenu();
         }
 
@@ -52,11 +55,34 @@ namespace PolePosition
             textSpeed.text = "Speed " + speed + " Km/h";
         }
 
+        public void UpdateCountdown(int countdown)
+        {
+            int maxCountdown = 4;
+            if (countdown >= maxCountdown)
+            {
+                textCountdown.text = "Waiting for drivers...";
+                textCountdown.fontSize = 62;
+            }
+            else if (countdown > 0 && countdown < maxCountdown)
+            {
+                textCountdown.fontSize = 300;
+                textCountdown.text = "" + countdown;
+            }
+            else if (countdown == 0)
+            {
+                textCountdown.text = "GO";
+            }
+            else
+            {
+                textCountdown.text = "";
+            }
+        }
+
         public void UpdatePlayersPositions(PlayerInfo playerInfo)
         {
             Debug.LogFormat("Setting player position {0}", playerInfo);
             int position = playerInfo.CurrentPosition - 1;
-            if(position >= 0 && position < textPositions.Length)
+            if (position >= 0 && position < textPositions.Length)
             {
                 Text text = textPositions[position];
                 text.text = string.Format("{0} Lap{1}", playerInfo.Name, playerInfo.CurrentLap);
@@ -73,7 +99,7 @@ namespace PolePosition
                 text.text = "";
             }
         }
-    
+
         private void ActivateMainMenu()
         {
             mainMenu.SetActive(true);
@@ -104,8 +130,8 @@ namespace PolePosition
         private void StartClient()
         {
             var text = inputFieldIP.text;
-            m_NetworkManager.networkAddress = text==string.Empty ? "localhost" : text;
-            m_NetworkManager.StartClient();        
+            m_NetworkManager.networkAddress = text == string.Empty ? "localhost" : text;
+            m_NetworkManager.StartClient();
             ActivatePlayerSetup();
         }
 

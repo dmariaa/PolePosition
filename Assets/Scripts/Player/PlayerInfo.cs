@@ -72,21 +72,27 @@ namespace PolePosition.Player
         {
             _setupPlayer.SetPosition(newPosition);
         }
+
+        [ClientRpc]
+        public void RpcLaunchPlayer()
+        {
+            _setupPlayer.StartPlayerController();
+        }
         #endregion
 
         #region Private props
         private SetupPlayer _setupPlayer;
         #endregion
-        
+
         #region Method Overrides
         private void Awake()
         {
             _setupPlayer = GetComponent<SetupPlayer>();
         }
-        
+
         public override string ToString()
         {
-            return string.Format(_printString, 
+            return string.Format(_printString,
                 ID,
                 Name,
                 Color.ToString(),
