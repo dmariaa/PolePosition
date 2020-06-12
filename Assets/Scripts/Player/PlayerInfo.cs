@@ -28,6 +28,18 @@ namespace PolePosition.Player
         [SyncVar(hook = nameof(OnChangeName))] public string Name;
 
         /// <summary>
+        /// Current speed
+        /// </summary>
+        [SyncVar(hook = nameof(OnChangeSpeed))] public Vector3 Speed;
+
+        /// <summary>
+        /// Current direction
+        /// Positive the car is moving forward relative to the circuit
+        /// Negative the car is moving backwards relative to the circuit
+        /// </summary>
+        [SyncVar(hook = nameof(OnChangeDirection))] public float Direction;
+
+        /// <summary>
         /// Player position in race
         /// </summary>
         [SyncVar(hook = nameof(OnChangePosition))] public int CurrentPosition;
@@ -35,7 +47,7 @@ namespace PolePosition.Player
         /// <summary>
         /// Player current race LAP
         /// </summary>
-        [SyncVar] public int CurrentLap;
+        [SyncVar(hook = nameof(OnChangeCurrentLap))] public int CurrentLap;
 
         /// <summary>
         /// Player current Color
@@ -45,8 +57,24 @@ namespace PolePosition.Player
         /// <summary>
         /// Player current ArcInfo
         /// </summary>
-        [SyncVar] public float ArcInfo;
+        [SyncVar(hook = nameof(OnChangeArcInfo))] public float ArcInfo;
+        
+        /// <summary>
+        /// Player Current Lap Time
+        /// </summary>
+        [SyncVar(hook=nameof(OnChangeCurrentLapTime))] public float CurrentLapTime;
 
+        /// <summary>
+        /// Player Total Race Time
+        /// </summary>
+        [SyncVar(hook=nameof(OnChangeTotalRaceTime))] public float TotalRaceTime;
+
+        /// <summary>
+        /// Player Total number of laps
+        /// (number of laps to complete in race
+        /// </summary>
+        [SyncVar(hook=nameof(OnChangeNumberOfLaps))] public int NumberOfLaps;
+        
         /// <summary>
         /// Player current ??
         /// </summary>
@@ -70,7 +98,42 @@ namespace PolePosition.Player
 
         private void OnChangePosition(int oldPosition, int newPosition)
         {
-            _setupPlayer.SetPosition(newPosition);
+            _setupPlayer.UpdatePosition();
+        }
+
+        private void OnChangeSpeed(Vector3 oldSpeed, Vector3 newSpeed)
+        {
+            _setupPlayer.SetSpeed(newSpeed.magnitude);
+        }
+
+        private void OnChangeDirection(float oldDirection, float newDirection)
+        {
+            // Debug.LogFormat("Direction: {0}", newDirection);
+        }
+
+        private void OnChangeArcInfo(float oldArcInfo, float newArcInfo)
+        {
+            // Debug.LogFormat("ArcLength: {0}", newArcInfo);
+        }
+
+        private void OnChangeCurrentLapTime(float oldTime, float newTime)
+        {
+            _setupPlayer.SetCurrentLapTime(newTime);
+        }
+
+        private void OnChangeTotalRaceTime(float oldTime, float newTime)
+        {
+            _setupPlayer.UpdatePosition();
+        }
+
+        private void OnChangeNumberOfLaps(int oldNumberOfLaps, int newNumberOfLaps)
+        {
+            _setupPlayer.SetNumberOfLaps(newNumberOfLaps);
+        }
+
+        private void OnChangeCurrentLap(int oldCurrentLap, int newCurrentLap)
+        {
+            _setupPlayer.SetCurrentLap(newCurrentLap);
         }
 
         [ClientRpc]

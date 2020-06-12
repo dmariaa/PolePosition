@@ -1,7 +1,7 @@
 ﻿using Mirror;
 using System.Threading;
+using PolePosition.UI;
 using UnityEngine;
-using Random = System.Random;
 
 /*
 	Documentation: https://mirror-networking.com/docs/Guides/NetworkBehaviour.html
@@ -23,7 +23,6 @@ namespace PolePosition.Player
 
         private void Awake()
         {
-
             m_PlayerInfo = GetComponent<PlayerInfo>();
             m_PlayerController = GetComponent<PlayerController>();
             m_NetworkManager = FindObjectOfType<NetworkManager>();
@@ -47,39 +46,36 @@ namespace PolePosition.Player
             {
                 ConfigureCamera();
             }
-        }
-
-        void OnSpeedChangeEventHandler(float speed)
-        {
-            SetSpeed(speed);
+            else
+            {
+                _playerInputController.enabled = false;
+            }
         }
 
         void ConfigureCamera()
         {
-            if (Camera.main != null) Camera.main.gameObject.GetComponent<CameraController>().m_Focus = this.gameObject;
+            if (Camera.main != null)
+            {
+                Camera.main.gameObject.GetComponent<CameraController>().m_Focus = this.gameObject;
+            }
         }
 
-        public void SetPosition(int position)
+        public void UpdatePosition()
         {
             m_UIManager.UpdatePlayersPositions(m_PlayerInfo);
         }
 
-        public void StartPlayerController()
-        {    
-            if (isLocalPlayer)
-            {
-                _playerInputController.enabled = true;
-            }
-        }
-
         public void SetSpeed(float speed)
         {
-            m_UIManager.UpdateSpeed((int)speed * 5); // 5 for visualization purpose (km/h)
+            if (isLocalPlayer)
+            {
+                m_UIManager.UpdateSpeed((int) speed * 5);
+            }
         }
 
         public void SetPlayerName(string name)
         {
-            if (isLocalPlayer)
+            if(isLocalPlayer)
             {
                 m_UIManager.SetConfigUIName(name);
             }
@@ -87,10 +83,43 @@ namespace PolePosition.Player
 
         public void SetPlayerColor(Color color)
         {
-            m_BodyMaterial.color = color;
-            if (isLocalPlayer)
+            if(isLocalPlayer)
             {
                 m_UIManager.SetConfigUIColor(color);
+            }
+            
+            m_BodyMaterial.color = color;
+        }
+
+        public void SetCurrentLap(int currentLap)
+        {
+            if(isLocalPlayer)
+            {
+                m_UIManager.SetCurrentLap(currentLap);
+            }
+        }
+
+        public void SetCurrentLapTime(float currentLapTime)
+        {
+            if(isLocalPlayer)
+            {
+                m_UIManager.SetCurrentLapTime(currentLapTime);
+            }
+        }
+
+        public void SetNumberOfLaps(int numberOfLaps)
+        {
+            if(isLocalPlayer)
+            {
+                m_UIManager.SetNumberOfLaps(numberOfLaps);
+            }
+        }
+        
+        public void StartPlayerController()
+        {    
+            if (isLocalPlayer)
+            {
+                _playerInputController.enabled = true;
             }
         }
     }

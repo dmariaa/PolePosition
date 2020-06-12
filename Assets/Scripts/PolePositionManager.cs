@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using Mirror;
 using PolePosition.Player;
+using PolePosition.UI;
 using UnityEngine;
 
 namespace PolePosition
@@ -17,6 +18,7 @@ namespace PolePosition
         }
 
         public int MaxNumPlayers = 4;
+        public int NumberOfLaps = 4;
         public UIManager uiManager;
         public CircuitController m_CircuitController;
 
@@ -117,6 +119,10 @@ namespace PolePosition
             {
                 PlayerInfo playerInfo = player.Value;
                 ComputeCarArcLength(ref playerInfo);
+                if (playerInfo.ArcInfo == 0)
+                {
+                    playerInfo.CurrentLap += 1;
+                }
                 arcLengths[i++] = new KeyValuePair<int, float>(playerInfo.ID, playerInfo.ArcInfo);
             }
 
@@ -126,7 +132,6 @@ namespace PolePosition
             {
                 PlayerInfo playerInfo = m_Players[arcLength.Key];
                 playerInfo.CurrentPosition = i++;
-                // uiManager.UpdatePlayersPositions(playerInfo);
             }
         }
 
@@ -161,6 +166,7 @@ namespace PolePosition
             player.PosCentral = carProj;
             player.PuntoLookAt = carDirection;
             player.ArcInfo = minArcL;
+            player.Direction = -Vector3.Cross(carProj, player.Speed).y;
             return minArcL;
         }
 
