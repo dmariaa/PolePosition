@@ -29,14 +29,16 @@ namespace PolePosition
                 ? Instantiate(playerPrefab, startPos.position, startPos.rotation)
                 : Instantiate(playerPrefab);
 
+            NetworkServer.AddPlayerForConnection(connection, player);
+            
             PlayerInfo playerInfo = player.GetComponent<PlayerInfo>();
             playerInfo.ID = connection.connectionId;
-            playerInfo.Name = message.Name;
+            playerInfo.Name = string.IsNullOrEmpty(message.Name) ? string.Format("Player{0}", startPositionIndex) : message.Name;
             playerInfo.Color = message.Color;
             playerInfo.CurrentPosition = startPositionIndex;
             playerInfo.CurrentLap = 0;
-
-            NetworkServer.AddPlayerForConnection(connection, player);
+            playerInfo.NumberOfLaps = _polePositionManager.NumberOfLaps; 
+            
             _polePositionManager.AddPlayer(playerInfo);
         }
 

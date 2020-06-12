@@ -36,28 +36,7 @@ namespace PolePosition.Player
         // Otras variables
         private Rigidbody m_Rigidbody;
         private float m_SteerHelper = 0.8f;
-    
-        private float maxDistanciaRecorrida=0;
-
-
-        private float m_CurrentSpeed = 0;
-
-        private float Speed
-        {
-            get { return m_CurrentSpeed; }
-            set
-            {
-                if (Math.Abs(m_CurrentSpeed - value) < float.Epsilon) return;
-                m_CurrentSpeed = value;
-                if (OnSpeedChangeEvent != null)
-                    OnSpeedChangeEvent(m_CurrentSpeed);
-            }
-        }
-
-        public delegate void OnSpeedChangeDelegate(float newVal);
-
-        public event OnSpeedChangeDelegate OnSpeedChangeEvent;
-
+        
         #endregion Variables
 
         #region Unity Callbacks
@@ -67,7 +46,65 @@ namespace PolePosition.Player
             m_Rigidbody = GetComponent<Rigidbody>();
             m_PlayerInfo = GetComponent<PlayerInfo>();
         }
-    
+
+        private float _currentLapTime = 0f;
+
+        private int _finishLineEnterDirection;
+        private bool _crossedFinishLineBack = false;
+        
+        [ServerCallback]
+        private void OnTriggerEnter(Collider other)
+        {
+            if (other.gameObject.tag.Equals("CircuitRoad"))
+            {
+                Debug.Log("Colisionando con el circuito");
+            } 
+            
+            if (other.gameObject.name == "FinishLine")
+            {
+                _finishLineEnterDirection = m_PlayerInfo.Direction > 0 ? 1 : -1;
+            }
+        }
+
+        [ServerCallback]
+        private void OnTriggerExit(Collider other)
+        {
+            int finishLineExitDirection = m_PlayerInfo.Direction > 0 ? 1 : -1;
+            
+            if (finishLineExitDirection == _finishLineEnterDirection)
+            {
+                if (_finishLineEnterDirection == 1)
+                {
+                    if(!_crossedFinishLineBack)
+                    {
+                        m_PlayerInfo.CurrentLap += 1;
+                        _currentLapTime = Time.deltaTime;
+                    }
+                    else
+                    {
+                        _crossedFinishLineBack = false;
+                    }
+                }
+                else
+                {
+                    _crossedFinishLineBack = true;    
+                }
+                
+                
+            }
+        }
+
+        [ServerCallback]
+        public void Update()
+        {
+            if (_currentLapTime > 0f)
+            {
+                _currentLapTime += Time.deltaTime;
+                m_PlayerInfo.CurrentLapTime = _currentLapTime;
+                m_PlayerInfo.TotalRaceTime += Time.deltaTime;
+            }
+        }
+
         [ServerCallback]
         public void FixedUpdate()
         {
@@ -127,6 +164,8 @@ namespace PolePosition.Player
             SpeedLimiter();
             AddDownForce();
             TractionControl();
+
+            m_PlayerInfo.Speed = m_Rigidbody.velocity;
         }
         #endregion
 
