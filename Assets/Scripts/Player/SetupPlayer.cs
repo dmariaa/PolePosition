@@ -1,4 +1,5 @@
 ﻿using Mirror;
+using System.Threading;
 using PolePosition.UI;
 using UnityEngine;
 
@@ -19,7 +20,7 @@ namespace PolePosition.Player
         private Material m_BodyMaterial;
 
         private PlayerInputController _playerInputController;
-        
+
         private void Awake()
         {
             m_PlayerInfo = GetComponent<PlayerInfo>();
@@ -27,10 +28,10 @@ namespace PolePosition.Player
             m_NetworkManager = FindObjectOfType<NetworkManager>();
             m_PolePositionManager = FindObjectOfType<PolePositionManager>();
             m_UIManager = FindObjectOfType<UIManager>();
-        
+
             // Controller for player input
             _playerInputController = GetComponent<PlayerInputController>();
-        
+
             // Gets the body material to update color
             Transform carBody = transform.Find("raceCar").Find("body");
             m_BodyMaterial = carBody.GetComponent<Renderer>().materials[1];
@@ -39,9 +40,10 @@ namespace PolePosition.Player
         // Start is called before the first frame update
         void Start()
         {
+            _playerInputController.enabled = false;
+
             if (isLocalPlayer)
             {
-                _playerInputController.enabled = true;
                 ConfigureCamera();
             }
             else
@@ -110,6 +112,14 @@ namespace PolePosition.Player
             if(isLocalPlayer)
             {
                 m_UIManager.SetNumberOfLaps(numberOfLaps);
+            }
+        }
+        
+        public void StartPlayerController()
+        {    
+            if (isLocalPlayer)
+            {
+                _playerInputController.enabled = true;
             }
         }
     }

@@ -25,6 +25,7 @@ namespace PolePosition.UI
         [SerializeField] private Text textLaps;
         [SerializeField] private Text textCurrentLap;
         [SerializeField] private Text textCurrentLapTime;
+        [SerializeField] private Text textCountDown;
         [SerializeField] private PlayerInfoPanelController[] playerPositions;
 
         [Header("Player Setup")] [SerializeField]
@@ -50,6 +51,29 @@ namespace PolePosition.UI
             ActivateMainMenu();
         }
         
+        public void UpdateCountdown(int countdown)
+        {
+            int maxCountdown = 4;
+            if (countdown >= maxCountdown)
+            {
+                textCountDown.text = "Waiting for drivers...";
+                textCountDown.fontSize = 62;
+            }
+            else if (countdown > 0 && countdown < maxCountdown)
+            {
+                textCountDown.fontSize = 300;
+                textCountDown.text = "" + countdown;
+            }
+            else if (countdown == 0)
+            {
+                textCountDown.text = "GO";
+            }
+            else
+            {
+                textCountDown.text = "";
+            }
+        }
+        
         private void ActivateMainMenu()
         {
             mainMenu.SetActive(true);
@@ -63,6 +87,7 @@ namespace PolePosition.UI
             playerSetup.SetActive(false);
             LayoutRebuilder.ForceRebuildLayoutImmediate(inGameHUD.GetComponent<RectTransform>());
             inGameHUD.SetActive(true);
+            playerSetup.SetActive(false);
         }
 
         private void ActivatePlayerSetup()
