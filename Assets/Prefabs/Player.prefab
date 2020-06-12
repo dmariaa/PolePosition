@@ -60,7 +60,7 @@ WheelCollider:
     m_ExtremumValue: 1
     m_AsymptoteSlip: 0.5
     m_AsymptoteValue: 0.75
-    m_Stiffness: 1.5
+    m_Stiffness: 1
   m_Enabled: 1
 --- !u!1 &1508097745644926054
 GameObject:
@@ -233,10 +233,15 @@ MonoBehaviour:
   syncInterval: 0.1
   ID: 0
   Name: 
+  Speed: {x: 0, y: 0, z: 0}
+  Direction: 0
   CurrentPosition: 0
   CurrentLap: 0
   Color: {r: 0, g: 0, b: 0, a: 0}
   ArcInfo: 0
+  CurrentLapTime: 0
+  TotalRaceTime: 0
+  NumberOfLaps: 0
   PosCentral: {x: 0, y: 0, z: 0}
   PuntoLookAt: {x: 0, y: 0, z: 0}
 --- !u!114 &1137246169109603126
@@ -579,7 +584,7 @@ WheelCollider:
     m_ExtremumValue: 1
     m_AsymptoteSlip: 0.5
     m_AsymptoteValue: 0.75
-    m_Stiffness: 1.5
+    m_Stiffness: 1
   m_Enabled: 1
 --- !u!1 &5703065227131910028
 GameObject:
@@ -832,7 +837,7 @@ WheelCollider:
     m_ExtremumValue: 1
     m_AsymptoteSlip: 0.5
     m_AsymptoteValue: 0.75
-    m_Stiffness: 1.5
+    m_Stiffness: 1
   m_Enabled: 1
 --- !u!1 &8856475019997471047
 GameObject:
@@ -894,5 +899,5 @@ WheelCollider:
     m_ExtremumValue: 1
     m_AsymptoteSlip: 0.5
     m_AsymptoteValue: 0.75
-    m_Stiffness: 1.5
+    m_Stiffness: 1
   m_Enabled: 1

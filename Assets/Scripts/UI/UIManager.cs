@@ -1,16 +1,17 @@
-﻿using Mirror;
+﻿using System;
+using Mirror;
+using PolePosition;
 using PolePosition.Player;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace PolePosition
+namespace PolePosition.UI
 {
     public class UIManager : MonoBehaviour
     {
         public bool showGUI = true;
-
         private NetworkManager m_NetworkManager;
-
+        
         [Header("Main Menu")] [SerializeField] private GameObject mainMenu;
         [SerializeField] private Button buttonHost;
         [SerializeField] private Button buttonClient;
@@ -22,7 +23,9 @@ namespace PolePosition
 
         [SerializeField] private Text textSpeed;
         [SerializeField] private Text textLaps;
-        [SerializeField] private Text[] textPositions;
+        [SerializeField] private Text textCurrentLap;
+        [SerializeField] private Text textCurrentLapTime;
+        [SerializeField] private PlayerInfoPanelController[] playerPositions;
 
         [Header("Player Setup")] [SerializeField]
         private GameObject playerSetup;
@@ -46,34 +49,7 @@ namespace PolePosition
         
             ActivateMainMenu();
         }
-
-        public void UpdateSpeed(int speed)
-        {
-            textSpeed.text = "Speed " + speed + " Km/h";
-        }
-
-        public void UpdatePlayersPositions(PlayerInfo playerInfo)
-        {
-            Debug.LogFormat("Setting player position {0}", playerInfo);
-            int position = playerInfo.CurrentPosition - 1;
-            if(position >= 0 && position < textPositions.Length)
-            {
-                Text text = textPositions[position];
-                text.text = string.Format("{0} Lap{1}", playerInfo.Name, playerInfo.CurrentLap);
-                text.color = playerInfo.Color;
-            }
-        }
-
-        public void ClearPlayerPosition(PlayerInfo playerInfo)
-        {
-            int position = playerInfo.CurrentPosition - 1;
-            if (position >= 0 && position < textPositions.Length)
-            {
-                Text text = textPositions[position];
-                text.text = "";
-            }
-        }
-    
+        
         private void ActivateMainMenu()
         {
             mainMenu.SetActive(true);
@@ -84,8 +60,9 @@ namespace PolePosition
         private void ActivateInGameHUD()
         {
             mainMenu.SetActive(false);
-            inGameHUD.SetActive(true);
             playerSetup.SetActive(false);
+            LayoutRebuilder.ForceRebuildLayoutImmediate(inGameHUD.GetComponent<RectTransform>());
+            inGameHUD.SetActive(true);
         }
 
         private void ActivatePlayerSetup()
@@ -139,6 +116,43 @@ namespace PolePosition
         public void SetConfigUIColor(Color color)
         {
             _colorPicker.SelectedColor = color;
+        }
+
+        public void SetNumberOfLaps(int numberOfLaps)
+        {
+            textLaps.text = "" + numberOfLaps;
+        }
+
+        public void SetCurrentLap(int currentLap)
+        {
+            textCurrentLap.text = "" + currentLap;
+        }
+
+        public void SetCurrentLapTime(float lapTime)
+        {
+            TimeSpan timeSpan = TimeSpan.FromMilliseconds(lapTime * 1000);
+            textCurrentLapTime.text = string.Format("{1:D2}:{2:D2}.{3:D4}", timeSpan.Hours, 
+                timeSpan.Minutes, timeSpan.Seconds, timeSpan.Milliseconds);
+        }
+        
+        public void UpdateSpeed(int speed)
+        {
+            textSpeed.text = "Speed " + speed + " Km/h";
+        }
+        
+        public void UpdatePlayersPositions(PlayerInfo playerInfo)
+        {
+            // Debug.LogFormat("Setting player position {0}", playerInfo);
+            int position = playerInfo.CurrentPosition - 1;
+            if(position >= 0 && position < playerPositions.Length)
+            {
+                PlayerInfoPanelController playerInfoPanelController = playerPositions[position];
+                playerInfoPanelController.UpdateData(playerInfo.CurrentPosition, 
+                    playerInfo.Color,
+                    playerInfo.Name,
+                    0f,
+                    playerInfo.TotalRaceTime);
+            }
         }
     }
 }
