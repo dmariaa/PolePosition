@@ -33,9 +33,9 @@ namespace PolePosition.Player
         [SyncVar(hook = nameof(OnChangeSpeed))] public Vector3 Speed;
 
         /// <summary>
-        /// Current direction
-        /// Positive the car is moving forward relative to the circuit
-        /// Negative the car is moving backwards relative to the circuit
+        /// Current direction,
+        /// if positive the car is moving forward relative to the circuit,
+        /// if negative the car is moving backwards relative to the circuit
         /// </summary>
         [SyncVar(hook = nameof(OnChangeDirection))] public float Direction;
 
@@ -65,6 +65,11 @@ namespace PolePosition.Player
         [SyncVar(hook=nameof(OnChangeCurrentLapTime))] public float CurrentLapTime;
 
         /// <summary>
+        /// Best Lap time
+        /// </summary>
+        [SyncVar(hook=nameof(OnChangeBestLapTime))] public float BestLapTime;
+
+        /// <summary>
         /// Player Total Race Time
         /// </summary>
         [SyncVar(hook=nameof(OnChangeTotalRaceTime))] public float TotalRaceTime;
@@ -76,14 +81,14 @@ namespace PolePosition.Player
         [SyncVar(hook=nameof(OnChangeNumberOfLaps))] public int NumberOfLaps;
         
         /// <summary>
-        /// Player current ??
+        /// Player current position in circuit as a vector3
         /// </summary>
-        [SyncVar] public Vector3 PosCentral;
+        [SyncVar] public Vector3 CurrentCircuitPosition;
 
         /// <summary>
-        /// Player current ??
+        /// Forward looking vector in circuit
         /// </summary>
-        [SyncVar] public Vector3 PuntoLookAt;
+        [SyncVar] public Vector3 LookAtPoint;
         #endregion
 
         #region SyncVars Hooks
@@ -121,6 +126,13 @@ namespace PolePosition.Player
             _setupPlayer.SetCurrentLapTime(newTime);
         }
 
+        private void OnChangeBestLapTime(float oldTime, float newTime)
+        {
+            Debug.LogFormat("Setting best lap time to {0}, current lap: {1}",
+                Utils.FormatTime(BestLapTime),
+                CurrentLap);
+        }
+
         private void OnChangeTotalRaceTime(float oldTime, float newTime)
         {
             _setupPlayer.UpdatePosition();
@@ -135,16 +147,66 @@ namespace PolePosition.Player
         {
             _setupPlayer.SetCurrentLap(newCurrentLap);
         }
+        #endregion
 
+        #region RpcCalls
+        /// <summary>
+        /// Called from server to launch player control
+        /// </summary>
         [ClientRpc]
         public void RpcLaunchPlayer()
         {
             _setupPlayer.StartPlayerController();
         }
+
+        /// <summary>
+        /// Called from server to stop player
+        /// </summary>
+        [ClientRpc]
+        public void RpcStopPlayer()
+        {
+            _setupPlayer.StopPlayerController();
+        }
         #endregion
 
         #region Private props
+        /// <summary>
+        /// Setup player component reference
+        /// </summary>
         private SetupPlayer _setupPlayer;
+        
+        /// <summary>
+        /// Total circuit distance covered
+        /// TODO: Remove if unused
+        /// </summary>
+        public float TotalDistance = 0;
+        
+        /// <summary>
+        /// Current lap value, used to measure distance
+        /// in current lap... It turns down and up when you cross
+        /// finish line forward or backward
+        /// Used server only, not needed in client
+        /// </summary>
+        public float CurrentLapCorrected = 0;
+        
+        /// <summary>
+        /// Current circuit segment the car is actually
+        /// Used server only, not needed in client
+        /// </summary>
+        public int CurrentSegmentIdx = 0;
+        
+        /// <summary>
+        /// true if last finish line crossing was made backwards,
+        /// false if was made forward
+        /// Used server only, not needed in client
+        /// </summary>
+        private bool _crossedFinishLineBack = false;
+
+        /// <summary>
+        /// true if all laps finished
+        /// Used server only, not needed in client
+        /// </summary>
+        public bool AllLapsFinished = false;
         #endregion
 
         #region Method Overrides
@@ -162,6 +224,58 @@ namespace PolePosition.Player
                 CurrentPosition,
                 CurrentLap
                 );
+        }
+        #endregion
+
+        #region Other Methods
+        /// <summary>
+        /// The player crossed the finish line in forward direction
+        /// Called server side only
+        /// </summary>
+        [Server]
+        public void CrossedFinishLineForward()
+        {
+            if (!_crossedFinishLineBack)
+            {
+                if (CurrentLap > 1)
+                {
+                    if (CurrentLapTime < BestLapTime)
+                    {
+                        BestLapTime = CurrentLapTime;
+                    }    
+                } else if (CurrentLap == 1)
+                {
+                    BestLapTime = CurrentLapTime;
+                }
+
+                CurrentLap += 1;
+                
+                if (CurrentLap <= NumberOfLaps)
+                {
+                    _setupPlayer.StartLapTime();
+                }
+                else
+                {
+                    AllLapsFinished = true;
+                    RpcStopPlayer();
+                    _setupPlayer.StopLapTime();
+                    _setupPlayer.StopCar();
+                }
+            }
+
+            CurrentLapCorrected += 1;
+            _crossedFinishLineBack = false;
+        }
+
+        /// <summary>
+        /// The player crossed the finish line in wrong direction
+        /// Called server side only
+        /// </summary>
+        [Server]
+        public void CrossedFinishLineBackwards()
+        {
+            CurrentLapCorrected -= 1;
+            _crossedFinishLineBack = true;
         }
         #endregion
     }

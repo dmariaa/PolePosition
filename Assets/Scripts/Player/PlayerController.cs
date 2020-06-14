@@ -23,20 +23,55 @@ namespace PolePosition.Player
         public float topSpeed = 200f;
         public float downForce = 1000f;
         public float slipLimit = 0.2f;
+        public float inputEndZone = float.Epsilon;
 
         // Entrada del usuario 
-        public float CurrentRotation { get; set; }
-        public float InputAcceleration { get; set; }
-        public float InputSteering { get; set; }
-        public float InputBrake { get; set; }
+        [field: SerializeField] public float CurrentRotation { get; set; }
+        [field: SerializeField] public float InputAcceleration { get; set; }
+        [field: SerializeField] public float InputSteering { get; set; }
+        [field: SerializeField] public float InputBrake { get; set; }
+        
+        /// <summary>
+        /// Is the engine started?
+        /// </summary>
+        public bool EngineStarted { get; set; }
+        
+        /// <summary>
+        /// Is the car upside down?
+        /// True if car is upside down
+        /// False if not
+        /// Readonly
+        /// </summary>
+        private bool UpsideDown
+        {
+            get
+            {
+                var rotation = transform.rotation;
+                return Mathf.Abs(rotation.eulerAngles.z) >= 50f &&
+                       Mathf.Abs(rotation.eulerAngles.z) <= 310f;
+            }
+        }
 
+        /// <summary>
+        /// Is the car stopped?
+        /// True if car is stopped
+        /// False if not
+        /// </summary>
+        private bool Stopped
+        {
+            get
+            {
+                return m_Rigidbody.velocity.magnitude <= 0.01f;
+            }    
+        }
+        
         // Componentes
         private PlayerInfo m_PlayerInfo;
-
-        // Otras variables
         private Rigidbody m_Rigidbody;
+
         private float m_SteerHelper = 0.8f;
-        
+        private float _currentLapTime = 0f;
+        private bool _countingTime;
         #endregion Variables
 
         #region Unity Callbacks
@@ -45,59 +80,34 @@ namespace PolePosition.Player
         {
             m_Rigidbody = GetComponent<Rigidbody>();
             m_PlayerInfo = GetComponent<PlayerInfo>();
+            EngineStarted = true;
         }
-
-        private float _currentLapTime = 0f;
-
-        private int _finishLineEnterDirection;
-        private bool _crossedFinishLineBack = false;
         
-        [ServerCallback]
-        private void OnTriggerEnter(Collider other)
+        /// <summary>
+        /// Starts counting lap time
+        /// Server only
+        /// </summary>
+        [Server]
+        public void StartLapTime()
         {
-            if (other.gameObject.tag.Equals("CircuitRoad"))
-            {
-                Debug.Log("Colisionando con el circuito");
-            } 
-            
-            if (other.gameObject.name == "FinishLine")
-            {
-                _finishLineEnterDirection = m_PlayerInfo.Direction > 0 ? 1 : -1;
-            }
+            _countingTime = true;
+            _currentLapTime = Time.deltaTime;
         }
 
-        [ServerCallback]
-        private void OnTriggerExit(Collider other)
+        /// <summary>
+        /// Stops counting lap time
+        /// Server only
+        /// </summary>
+        [Server]
+        public void StopLapTime()
         {
-            int finishLineExitDirection = m_PlayerInfo.Direction > 0 ? 1 : -1;
-            
-            if (finishLineExitDirection == _finishLineEnterDirection)
-            {
-                if (_finishLineEnterDirection == 1)
-                {
-                    if(!_crossedFinishLineBack)
-                    {
-                        m_PlayerInfo.CurrentLap += 1;
-                        _currentLapTime = Time.deltaTime;
-                    }
-                    else
-                    {
-                        _crossedFinishLineBack = false;
-                    }
-                }
-                else
-                {
-                    _crossedFinishLineBack = true;    
-                }
-                
-                
-            }
+            _countingTime = false;
         }
-
+        
         [ServerCallback]
         public void Update()
         {
-            if (_currentLapTime > 0f)
+            if (_countingTime)
             {
                 _currentLapTime += Time.deltaTime;
                 m_PlayerInfo.CurrentLapTime = _currentLapTime;
@@ -110,6 +120,13 @@ namespace PolePosition.Player
         {
             float steering = maxSteeringAngle * InputSteering;
 
+            if (!EngineStarted)
+            {
+                InputAcceleration = 0f;
+                InputSteering = 0f;
+                InputBrake = 999999999f;
+            }
+
             foreach (AxleInfo axleInfo in axleInfos)
             {
                 if (axleInfo.steering)
@@ -120,23 +137,19 @@ namespace PolePosition.Player
 
                 if (axleInfo.motor)
                 {
-                    if (InputAcceleration > float.Epsilon)
+                    if (InputAcceleration > inputEndZone)
                     {
                         axleInfo.leftWheel.motorTorque = forwardMotorTorque;
                         axleInfo.leftWheel.brakeTorque = 0;
                         axleInfo.rightWheel.motorTorque = forwardMotorTorque;
                         axleInfo.rightWheel.brakeTorque = 0;
-                    }
-
-                    if (InputAcceleration < -float.Epsilon)
+                    } else if (InputAcceleration < -inputEndZone)
                     {
                         axleInfo.leftWheel.motorTorque = -backwardMotorTorque;
                         axleInfo.leftWheel.brakeTorque = 0;
                         axleInfo.rightWheel.motorTorque = -backwardMotorTorque;
                         axleInfo.rightWheel.brakeTorque = 0;
-                    }
-
-                    if (Math.Abs(InputAcceleration) < float.Epsilon)
+                    } else
                     {
                         axleInfo.leftWheel.motorTorque = 0;
                         axleInfo.leftWheel.brakeTorque = engineBrake;
@@ -149,9 +162,9 @@ namespace PolePosition.Player
                         axleInfo.leftWheel.brakeTorque = footBrake;
                         axleInfo.rightWheel.brakeTorque = footBrake;
 
-                        if (EstoyVolcado())      
+                        if(UpsideDown && Stopped)      
                         {
-                            Recolocado();
+                            RelocateCar();
                         }
                     }
                 }
@@ -170,22 +183,50 @@ namespace PolePosition.Player
         #endregion
 
         #region Methods
-        //recoloca el coche en el centyro de la carretera horientado en la direccion correcta
-        private void Recolocado()
+        /// <summary>
+        /// Disable this rigidBody so no collisions and
+        /// other physics act on it
+        /// Server only
+        /// </summary>
+        [Server]
+        public void disableRigidBody()
         {
-            Vector3 pos = new Vector3(m_PlayerInfo.PosCentral.x, 0.51f, m_PlayerInfo.PosCentral.z);
+            m_Rigidbody.isKinematic = true;
+            m_Rigidbody.detectCollisions = false;
+        }
+
+        /// <summary>
+        /// Enables this rigidBody so no collisions and other physics
+        /// act on it
+        /// Server only
+        /// </summary>
+        [Server]
+        public void enableRigidBody()
+        {
+            m_Rigidbody.isKinematic = false;
+            m_Rigidbody.detectCollisions = true;
+        }
+
+        /// <summary>
+        /// Relocates car in track
+        /// Server only 
+        /// </summary>
+        [Server]
+        private void RelocateCar()
+        {
+            Vector3 pos = new Vector3(m_PlayerInfo.CurrentCircuitPosition.x, 0.51f, m_PlayerInfo.CurrentCircuitPosition.z);
+            Vector3 rot = m_PlayerInfo.LookAtPoint;
+            disableRigidBody();
             transform.position = pos;
-            Vector3 rot = m_PlayerInfo.PuntoLookAt;
             transform.LookAt(new Vector3(rot.x, transform.position.y, rot.z));
+            enableRigidBody();
         }
-    
-        //Indica si el coche está volcado
-        private bool EstoyVolcado()
-        {
-            return Mathf.Abs(transform.rotation.eulerAngles.z) > 25 && Mathf.Abs(transform.rotation.eulerAngles.z) < 335;
-        }
-    
-        // crude traction control that reduces the power to wheel if the car is wheel spinning too much
+
+        /// <summary>
+        /// crude traction control that reduces the power to wheel if the car is wheel spinning too much
+        /// Server only 
+        /// </summary>
+        [Server]
         private void TractionControl()
         {
             foreach (var axleInfo in axleInfos)
@@ -209,16 +250,28 @@ namespace PolePosition.Player
             }
         }
 
-        // this is used to add more grip in relation to speed
+        /// <summary>
+        /// crude traction control that reduces the power to wheel if the car is wheel spinning too much
+        /// Server only
+        /// </summary>
+        [Server]
         private void AddDownForce()
         {
-            foreach (var axleInfo in axleInfos)
-            {
-                axleInfo.leftWheel.attachedRigidbody.AddForce(
-                    -transform.up * (downForce * axleInfo.leftWheel.attachedRigidbody.velocity.magnitude));
-            }
+            // foreach (var axleInfo in axleInfos)
+            // {
+            //     axleInfo.leftWheel.attachedRigidbody.AddForce(-transform.up * (downForce * axleInfo.leftWheel.attachedRigidbody.velocity.magnitude));
+            // }
+            
+            // More efficient code, same calculation
+            Vector3 force = -transform.up * (axleInfos.Count * (downForce * m_Rigidbody.velocity.magnitude));
+            m_Rigidbody.AddForce(force);
         }
 
+        /// <summary>
+        /// Limits speed to top speed
+        /// Server only
+        /// </summary>
+        [Server]
         private void SpeedLimiter()
         {
             float speed = m_Rigidbody.velocity.magnitude;
@@ -226,8 +279,11 @@ namespace PolePosition.Player
                 m_Rigidbody.velocity = topSpeed * m_Rigidbody.velocity.normalized;
         }
 
-        // finds the corresponding visual wheel
-        // correctly applies the transform
+        /// <summary>
+        /// finds the corresponding visual wheel
+        /// correctly applies the transform
+        /// </summary>
+        [Server]
         public void ApplyLocalPositionToVisuals(WheelCollider col)
         {
             if (col.transform.childCount == 0)
@@ -244,6 +300,11 @@ namespace PolePosition.Player
             myTransform.rotation = rotation;
         }
 
+        /// <summary>
+        /// Steer helper function
+        /// Server only
+        /// </summary>
+        [Server]
         private void SteerHelper()
         {
             foreach (var axleInfo in axleInfos)

@@ -35,6 +35,11 @@ namespace PolePosition.UI
         [SerializeField] private ColorPicker _colorPicker;
         [SerializeField] private Button _readyButton;
 
+        [Header("Player Results")] [SerializeField]
+        private GameObject _playerResults;
+
+        [SerializeField] private GameObject _rankingPanel;
+        [SerializeField] private PlayerResultsPanelController _playerResultsPanelController;
 
         private void Awake()
         {
@@ -51,50 +56,36 @@ namespace PolePosition.UI
             ActivateMainMenu();
         }
         
-        public void UpdateCountdown(int countdown)
+        public void ActivateMainMenu()
         {
-            int maxCountdown = 4;
-            if (countdown >= maxCountdown)
-            {
-                textCountDown.text = "Waiting for drivers...";
-                textCountDown.fontSize = 62;
-            }
-            else if (countdown > 0 && countdown < maxCountdown)
-            {
-                textCountDown.fontSize = 300;
-                textCountDown.text = "" + countdown;
-            }
-            else if (countdown == 0)
-            {
-                textCountDown.text = "GO";
-            }
-            else
-            {
-                textCountDown.text = "";
-            }
-        }
-        
-        private void ActivateMainMenu()
-        {
+            inGameHUD.SetActive(false);
+            playerSetup.SetActive(false);
+            _playerResults.SetActive(false);
             mainMenu.SetActive(true);
-            inGameHUD.SetActive(false);
-            playerSetup.SetActive(false);
         }
 
-        private void ActivateInGameHUD()
+        public void ActivateInGameHUD()
         {
             mainMenu.SetActive(false);
             playerSetup.SetActive(false);
-            LayoutRebuilder.ForceRebuildLayoutImmediate(inGameHUD.GetComponent<RectTransform>());
+            _playerResults.SetActive(false);
             inGameHUD.SetActive(true);
-            playerSetup.SetActive(false);
         }
 
-        private void ActivatePlayerSetup()
+        public void ActivatePlayerSetup()
         {
             mainMenu.SetActive(false);
             inGameHUD.SetActive(false);
+            _playerResults.SetActive(false);
             playerSetup.SetActive(true);
+        }
+
+        public void ActivatePlayerResults()
+        {
+            mainMenu.SetActive(false);
+            inGameHUD.SetActive(false);
+            playerSetup.SetActive(false);
+            _playerResults.SetActive(true);
         }
 
         private void StartHost()
@@ -178,6 +169,36 @@ namespace PolePosition.UI
                     0f,
                     playerInfo.TotalRaceTime);
             }
+        }
+        
+        public void UpdateCountdown(int countdown)
+        {
+            int maxCountdown = 4;
+            if (countdown >= maxCountdown)
+            {
+                textCountDown.text = "Waiting for drivers...";
+                textCountDown.fontSize = 62;
+            }
+            else if (countdown > 0 && countdown < maxCountdown)
+            {
+                textCountDown.fontSize = 300;
+                textCountDown.text = "" + countdown;
+            }
+            else if (countdown == 0)
+            {
+                textCountDown.text = "GO";
+            }
+            else
+            {
+                textCountDown.text = "";
+            }
+        }
+
+        public void AddPlayerResult(int position, Color color, string playerName, float raceTime, float bestLapTime)
+        {
+            var panelTransform = _rankingPanel.transform;
+            PlayerResultsPanelController panel = Instantiate(_playerResultsPanelController, panelTransform);
+            panel.UpdateData(position, color, playerName,raceTime, bestLapTime);
         }
     }
 }

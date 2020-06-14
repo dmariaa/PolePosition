@@ -73,14 +73,14 @@ GameObject:
   - component: {fileID: 5767276987077256635}
   - component: {fileID: 8225447335114324579}
   - component: {fileID: 8890231183782247234}
+  - component: {fileID: 1137246169109603126}
+  - component: {fileID: 114412962776705740}
+  - component: {fileID: 3466774584401487325}
   - component: {fileID: 528894820688187042}
   - component: {fileID: 9124325200002634512}
   - component: {fileID: 449604030476931776}
   - component: {fileID: 6346869062069434778}
   - component: {fileID: 2697569808015383802}
-  - component: {fileID: 3466774584401487325}
-  - component: {fileID: 1137246169109603126}
-  - component: {fileID: 114412962776705740}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -132,6 +132,88 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 1.0799457, y: 0.51, z: 2.45}
   m_Center: {x: -0.005710423, y: 0.45, z: -0.028551817}
+--- !u!114 &1137246169109603126
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1508097745644926054}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 07a6aca61e4e6924994029eabc595776, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncMode: 0
+  syncInterval: 0.1
+  axleInfos:
+  - leftWheel: {fileID: 7529074410251188952}
+    rightWheel: {fileID: 2399590223335585634}
+    motor: 1
+    steering: 1
+  - leftWheel: {fileID: 6283861155603876286}
+    rightWheel: {fileID: 2814993475587467073}
+    motor: 1
+    steering: 0
+  forwardMotorTorque: 100000
+  backwardMotorTorque: 50000
+  maxSteeringAngle: 15
+  engineBrake: 1e+12
+  footBrake: 1e+24
+  topSpeed: 200
+  downForce: 1000
+  slipLimit: 0.2
+  inputEndZone: 0.0001
+  <CurrentRotation>k__BackingField: 0
+  <InputAcceleration>k__BackingField: 0
+  <InputSteering>k__BackingField: 0
+  <InputBrake>k__BackingField: 0
+--- !u!114 &114412962776705740
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1508097745644926054}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cc41140a835a4ba8b0263b048e29479f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncMode: 0
+  syncInterval: 0.1
+--- !u!114 &3466774584401487325
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1508097745644926054}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 370ebdb6a034beb4dad079ecb19fb3c9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncMode: 0
+  syncInterval: 0.1
+  ID: 0
+  Name: 
+  Speed: {x: 0, y: 0, z: 0}
+  Direction: 0
+  CurrentPosition: 0
+  CurrentLap: 0
+  Color: {r: 0, g: 0, b: 0, a: 0}
+  ArcInfo: 0
+  CurrentLapTime: 0
+  BestLapTime: 0
+  TotalRaceTime: 0
+  NumberOfLaps: 0
+  PosCentral: {x: 0, y: 0, z: 0}
+  PuntoLookAt: {x: 0, y: 0, z: 0}
+  TotalDistance: 0
+  CurrentLapCorrected: 0
+  CurrentSegmentIdx: 24
+  AllLapsFinished: 0
 --- !u!114 &528894820688187042
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -217,78 +299,6 @@ MonoBehaviour:
   localRotationSensitivity: 0.01
   localScaleSensitivity: 0.01
   target: {fileID: 1170538449349667297}
---- !u!114 &3466774584401487325
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1508097745644926054}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 370ebdb6a034beb4dad079ecb19fb3c9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  syncMode: 0
-  syncInterval: 0.1
-  ID: 0
-  Name: 
-  Speed: {x: 0, y: 0, z: 0}
-  Direction: 0
-  CurrentPosition: 0
-  CurrentLap: 0
-  Color: {r: 0, g: 0, b: 0, a: 0}
-  ArcInfo: 0
-  CurrentLapTime: 0
-  TotalRaceTime: 0
-  NumberOfLaps: 0
-  PosCentral: {x: 0, y: 0, z: 0}
-  PuntoLookAt: {x: 0, y: 0, z: 0}
---- !u!114 &1137246169109603126
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1508097745644926054}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 07a6aca61e4e6924994029eabc595776, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  syncMode: 0
-  syncInterval: 0.1
-  axleInfos:
-  - leftWheel: {fileID: 7529074410251188952}
-    rightWheel: {fileID: 2399590223335585634}
-    motor: 1
-    steering: 1
-  - leftWheel: {fileID: 6283861155603876286}
-    rightWheel: {fileID: 2814993475587467073}
-    motor: 1
-    steering: 0
-  forwardMotorTorque: 100000
-  backwardMotorTorque: 50000
-  maxSteeringAngle: 15
-  engineBrake: 1e+12
-  footBrake: 1e+24
-  topSpeed: 200
-  downForce: 1000
-  slipLimit: 0.2
---- !u!114 &114412962776705740
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1508097745644926054}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cc41140a835a4ba8b0263b048e29479f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  syncMode: 0
-  syncInterval: 0.1
 --- !u!1 &3266956378083433421
 GameObject:
   m_ObjectHideFlags: 0

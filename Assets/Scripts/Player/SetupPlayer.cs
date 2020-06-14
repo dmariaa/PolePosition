@@ -13,10 +13,8 @@ namespace PolePosition.Player
     public class SetupPlayer : NetworkBehaviour
     {
         private UIManager m_UIManager;
-        private NetworkManager m_NetworkManager;
         private PlayerController m_PlayerController;
         private PlayerInfo m_PlayerInfo;
-        private PolePositionManager m_PolePositionManager;
         private Material m_BodyMaterial;
 
         private PlayerInputController _playerInputController;
@@ -25,8 +23,6 @@ namespace PolePosition.Player
         {
             m_PlayerInfo = GetComponent<PlayerInfo>();
             m_PlayerController = GetComponent<PlayerController>();
-            m_NetworkManager = FindObjectOfType<NetworkManager>();
-            m_PolePositionManager = FindObjectOfType<PolePositionManager>();
             m_UIManager = FindObjectOfType<UIManager>();
 
             // Controller for player input
@@ -40,18 +36,34 @@ namespace PolePosition.Player
         // Start is called before the first frame update
         void Start()
         {
+            // Security measure, just in case for some reason 
+            // player input controller is enabled on start
             _playerInputController.enabled = false;
 
             if (isLocalPlayer)
             {
                 ConfigureCamera();
             }
+
+            if (isServer)
+            {
+                m_PlayerController.enabled = true;
+                m_PlayerController.enableRigidBody();
+            }
             else
             {
-                _playerInputController.enabled = false;
+                // No need for controller nor physics
+                // in clients, server is fully authoritative
+                m_PlayerController.enabled = false;
+                m_PlayerController.disableRigidBody();
             }
         }
 
+        /// <summary>
+        /// Setups camera
+        /// Client only
+        /// </summary>
+        [Client]
         void ConfigureCamera()
         {
             if (Camera.main != null)
@@ -60,11 +72,22 @@ namespace PolePosition.Player
             }
         }
 
+        /// <summary>
+        /// Updates players positions on UI
+        /// Client only
+        /// </summary>
+        [Client]
         public void UpdatePosition()
         {
             m_UIManager.UpdatePlayersPositions(m_PlayerInfo);
         }
 
+        /// <summary>
+        /// Sets current speed on UI
+        /// Client only
+        /// </summary>
+        /// <param name="speed">Current car speed</param>
+        [Client]
         public void SetSpeed(float speed)
         {
             if (isLocalPlayer)
@@ -73,6 +96,12 @@ namespace PolePosition.Player
             }
         }
 
+        /// <summary>
+        /// Sets current player name
+        /// Client only
+        /// </summary>
+        /// <param name="name">Player name</param>
+        [Client]
         public void SetPlayerName(string name)
         {
             if(isLocalPlayer)
@@ -81,6 +110,12 @@ namespace PolePosition.Player
             }
         }
 
+        /// <summary>
+        /// Sets car color
+        /// Client only
+        /// </summary>
+        /// <param name="color">Car color</param>
+        [Client]
         public void SetPlayerColor(Color color)
         {
             if(isLocalPlayer)
@@ -91,6 +126,12 @@ namespace PolePosition.Player
             m_BodyMaterial.color = color;
         }
 
+        /// <summary>
+        /// Sets current lap on UI
+        /// Client only
+        /// </summary>
+        /// <param name="currentLap">Current lap</param>
+        [Client]
         public void SetCurrentLap(int currentLap)
         {
             if(isLocalPlayer)
@@ -99,6 +140,12 @@ namespace PolePosition.Player
             }
         }
 
+        /// <summary>
+        /// Sets current lap time on UI
+        /// Client only
+        /// </summary>
+        /// <param name="currentLapTime">Current lap time</param>
+        [Client] 
         public void SetCurrentLapTime(float currentLapTime)
         {
             if(isLocalPlayer)
@@ -107,6 +154,12 @@ namespace PolePosition.Player
             }
         }
 
+        /// <summary>
+        /// Sets number of laps on UI
+        /// Client only
+        /// </summary>
+        /// <param name="numberOfLaps">Number of laps</param>
+        [Client]
         public void SetNumberOfLaps(int numberOfLaps)
         {
             if(isLocalPlayer)
@@ -115,12 +168,60 @@ namespace PolePosition.Player
             }
         }
         
+        /// <summary>
+        /// Enables player control of this car
+        /// Client only
+        /// </summary>
+        [Client]
         public void StartPlayerController()
         {    
             if (isLocalPlayer)
             {
                 _playerInputController.enabled = true;
             }
+        }
+
+        /// <summary>
+        /// Disables player control of this car
+        /// Client only
+        /// </summary>
+        [Client]
+        public void StopPlayerController()
+        {
+            if (isLocalPlayer)
+            {
+                _playerInputController.enabled = false;
+            }
+        }
+        
+        /// <summary>
+        /// Starts counting lap and total time
+        /// Server only
+        /// </summary>
+        [Server]
+        public void StartLapTime()
+        {
+            m_PlayerController.StartLapTime();            
+        }
+
+        /// <summary>
+        /// Ends counting lap and total time
+        /// Server only
+        /// </summary>
+        [Server]
+        public void StopLapTime()
+        {
+            m_PlayerController.StopLapTime();
+        }
+        
+        /// <summary>
+        /// Stops the car
+        /// Server only
+        /// </summary>
+        [Server]
+        public void StopCar()
+        {
+            m_PlayerController.EngineStarted = false;
         }
     }
 }

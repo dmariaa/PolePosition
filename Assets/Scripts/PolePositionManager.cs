@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading;
+using System.Linq;
 using Mirror;
 using PolePosition.Player;
 using PolePosition.UI;
 using UnityEngine;
+using NetworkBehaviour = Mirror.NetworkBehaviour;
 
 namespace PolePosition
 {
@@ -14,8 +15,11 @@ namespace PolePosition
         {
             WAITING_FOR_PLAYERS,
             COUNT_DOWN,
-            IN_RACE
+            IN_RACE,
+            RACE_FINISHED
         }
+        
+        private RaceStates _raceState = RaceStates.WAITING_FOR_PLAYERS;
 
         public int MaxNumPlayers = 4;
         public int NumberOfLaps = 4;
@@ -25,19 +29,12 @@ namespace PolePosition
         private readonly Dictionary<int, PlayerInfo> m_Players = new Dictionary<int, PlayerInfo>();
         private GameObject[] m_DebuggingSpheres;
 
-        [SyncVar(hook = nameof(SetRaceSemaphore))] private int RaceSemaphore;
         private float timer;
 
-        private RaceStates _raceState = RaceStates.WAITING_FOR_PLAYERS;
-
-        private void SetRaceSemaphore(int oldRaceSemaphore, int newRaceSemaphore)
-        {
-            uiManager.UpdateCountdown(newRaceSemaphore);
-        }
+        private int RaceSemaphore;
 
         private void Awake()
         {
-            RaceSemaphore = 4;
             if (uiManager == null) uiManager = FindObjectOfType<UIManager>();
             if (m_CircuitController == null) m_CircuitController = FindObjectOfType<CircuitController>();
 
@@ -47,6 +44,8 @@ namespace PolePosition
                 m_DebuggingSpheres[i] = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                 m_DebuggingSpheres[i].GetComponent<SphereCollider>().enabled = false;
             }
+
+            RaceSemaphore = 4;
         }
 
         [ServerCallback]
@@ -70,6 +69,7 @@ namespace PolePosition
                     if (RaceSemaphore >= 0 && timer >= 1.0f)
                     {
                         RaceSemaphore--;
+                        RpcUpdateCountdown(RaceSemaphore);
                         timer = 0.0f;
                     }
                     else if (RaceSemaphore <= 0)
@@ -84,12 +84,20 @@ namespace PolePosition
                     if (timer >= 1.0f && RaceSemaphore > -1)
                     {
                         RaceSemaphore--;
+                        RpcUpdateCountdown(RaceSemaphore);
                     }
                     UpdateRaceProgress();
+                    break;
+                case RaceStates.RACE_FINISHED:
                     break;
             }   
         }
 
+        /// <summary>
+        /// Starts the race
+        /// Server side only
+        /// </summary>
+        [Server]
         private void StartRace()
         {
             foreach(var player in m_Players)
@@ -97,33 +105,92 @@ namespace PolePosition
                 player.Value.RpcLaunchPlayer();
             }
         }
+        
+        /// <summary>
+        /// Finishes the race, shows results
+        /// Server only
+        /// </summary>
+        [Server]
+        void FinishRace()
+        {
+            PlayerInfo[] playerInfos = m_Players.Values.ToArray();
+            Array.Sort(playerInfos, (one, two) => one.CurrentPosition < two.CurrentPosition ? 1 : -1);
+            foreach (var playerInfo in playerInfos)
+            {
+                RpcAddPlayerResult(playerInfo.CurrentPosition, playerInfo.Color, playerInfo.Name, 
+                    playerInfo.TotalRaceTime, playerInfo.BestLapTime);   
+            }
 
+            RpcShowResults();
+            _raceState = RaceStates.RACE_FINISHED;
+        }
 
+        /// <summary>
+        /// Adds a player to it's list of players
+        /// Server side only
+        /// </summary>
+        /// <param name="player"></param>
+        [Server]
         public void AddPlayer(PlayerInfo player)
         {
             m_Players.Add(player.ID, player);
-            // uiManager.UpdatePlayersPositions(player);
         }
 
+        /// <summary>
+        /// Removes a player from it's list of players
+        /// Server side only
+        /// </summary>
+        /// <param name="player"></param>
+        [Server]
         public void RemovePlayer(PlayerInfo player)
         {
             m_Players.Remove(player.ID);
         }
 
+        /// <summary>
+        /// Updates car race progress
+        /// - Calculates players position in circuit
+        /// - Calculates players relative position
+        /// - Notifies players finish line crossed
+        /// - Finishes the race when all players have finished
+        /// Server side only
+        /// TODO: Review, generates error when branded as [Server] or [ServerCallback]
+        /// TODO: It has something to do with the call to the circuit what is a
+        /// TODO: MonoBehabior not a NetworkBehavior
+        /// </summary>
         public void UpdateRaceProgress()
         {
             // Update car arc-lengths
+            float circuitLength = m_CircuitController.CircuitLength;
             KeyValuePair<int, float>[] arcLengths = new KeyValuePair<int, float>[m_Players.Count];
             int i = 0;
+            int finishedPlayers = 0;
+            
             foreach (var player in m_Players)
             {
                 PlayerInfo playerInfo = player.Value;
                 ComputeCarArcLength(ref playerInfo);
-                if (playerInfo.ArcInfo == 0)
+                int j = 0;
+                
+                // Distance covered in circuit
+                float coveredCircuitDistance = playerInfo.CurrentLapCorrected==0 ?
+                    playerInfo.ArcInfo - circuitLength:
+                    circuitLength * (playerInfo.CurrentLapCorrected - 1) + playerInfo.ArcInfo;
+                
+                // Debug.LogFormat("ArcInfo: {0}, Covered length: {1}", playerInfo.ArcInfo, coveredCircuitDistance);
+                arcLengths[i++] = new KeyValuePair<int, float>(playerInfo.ID, coveredCircuitDistance);
+
+                if (playerInfo.AllLapsFinished)
                 {
-                    playerInfo.CurrentLap += 1;
+                    finishedPlayers++;
                 }
-                arcLengths[i++] = new KeyValuePair<int, float>(playerInfo.ID, playerInfo.ArcInfo);
+            }
+
+            // Race has finished
+            if (finishedPlayers == m_Players.Count)
+            {
+                FinishRace();
+                return;
             }
 
             Array.Sort(arcLengths, (one, other) => one.Value < other.Value ? 1 : -1);
@@ -135,6 +202,12 @@ namespace PolePosition
             }
         }
 
+        /// <summary>
+        /// Computes car position in circuit
+        /// Server only 
+        /// </summary>
+        /// <param name="player"></param>
+        /// <returns></returns>
         float ComputeCarArcLength(ref PlayerInfo player)
         {
             // Compute the projection of the car position to the closest circuit 
@@ -152,28 +225,68 @@ namespace PolePosition
                 this.m_CircuitController.ComputeClosestPointArcLength(carPos, out carDirection, out segIdx, out carProj, out carDist);
 
             this.m_DebuggingSpheres[ID].transform.position = carProj;
-
-            if (this.m_Players[ID].CurrentLap == 0)
+            
+            // Has the player crossed finish line?
+            if(player.CurrentSegmentIdx==m_CircuitController.CircuitNumberOfSegments - 1 && segIdx==0)
             {
-                minArcL -= m_CircuitController.CircuitLength;
-            }
-            else
+                player.CrossedFinishLineForward();
+            } else if (player.CurrentSegmentIdx == 0 && segIdx == m_CircuitController.CircuitNumberOfSegments - 1)
             {
-                minArcL += m_CircuitController.CircuitLength *
-                           (m_Players[ID].CurrentLap - 1);
+                player.CrossedFinishLineBackwards();
             }
-
-            player.PosCentral = carProj;
-            player.PuntoLookAt = carDirection;
+            
+            // Update player info
+            player.CurrentCircuitPosition = carProj;
+            player.LookAtPoint = carDirection;
             player.ArcInfo = minArcL;
             player.Direction = -Vector3.Cross(carProj, player.Speed).y;
+            player.CurrentSegmentIdx = segIdx;
             return minArcL;
         }
-
+        
+        /// <summary>
+        /// Called when this object spawns on client
+        /// </summary>
         public override void OnStartClient()
         {
             base.OnStartClient();
-            uiManager.UpdateCountdown(RaceSemaphore);
+            uiManager.UpdateCountdown(4);
+        }
+
+        /// <summary>
+        /// Updates client ui countdown
+        /// Client side, called from server
+        /// </summary>
+        /// <param name="value">countdown value</param>
+        [ClientRpc]
+        void RpcUpdateCountdown(int value)
+        {
+            uiManager.UpdateCountdown(value);
+        }
+
+        /// <summary>
+        /// Adds a player result to UI results table
+        /// </summary>
+        /// <param name="position"></param>
+        /// <param name="color"></param>
+        /// <param name="playerName"></param>
+        /// <param name="raceTime"></param>
+        /// <param name="bestLapTime"></param>
+        [ClientRpc]
+        void RpcAddPlayerResult(int position, Color color, string playerName, float raceTime, float bestLapTime)
+        {
+            //Debug.LogFormat("Adding player info to results: {0} - {1} - {2} - {3} - {4}",
+            //    position,color,playerName,raceTime,bestLapTime);
+            uiManager.AddPlayerResult(position, color, playerName, raceTime, bestLapTime);
+        }
+
+        /// <summary>
+        /// Shows results table
+        /// </summary>
+        [ClientRpc]
+        void RpcShowResults()
+        {
+            uiManager.ActivatePlayerResults();
         }
     }
 }
