@@ -7,7 +7,7 @@ namespace PolePosition.Player
     public class PlayerInputController : NetworkBehaviour
     {
         private PlayerController _playerController;
-
+        
         private void Awake()
         {
             if (_playerController == null)
@@ -28,7 +28,7 @@ namespace PolePosition.Player
                 );    
             }
         }
-
+        
         [Command]
         private void CmdUpdateInputs(float acceleration, float steering, float brake)
         {

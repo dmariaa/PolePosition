@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+﻿using System.Text;
+using Mirror;
+using UnityEngine;
 
 namespace PolePosition
 {
@@ -14,6 +16,16 @@ namespace PolePosition
             get { return m_TotalLength; }
         }
 
+        public int CircuitNumberOfPoints
+        {
+            get { return m_CircuitPath.positionCount; }
+        }
+
+        public int CircuitNumberOfSegments
+        {
+            get { return m_CircuitPath.positionCount - 1; }
+        }
+
         void Start()
         {
             m_CircuitPath = GetComponent<LineRenderer>();
@@ -25,12 +37,17 @@ namespace PolePosition
 
             // Compute circuit arc-length
             m_CumArcLength[0] = 0;
+            
+            StringBuilder stringBuilder = new StringBuilder();
 
             for (int i = 1; i < m_PathPos.Length; ++i)
             {
                 float length = (m_PathPos[i] - m_PathPos[i - 1]).magnitude;
                 m_CumArcLength[i] = m_CumArcLength[i - 1] + length;
+                stringBuilder.AppendLine(string.Format("{0}", m_PathPos[i]));
             }
+            
+            Debug.Log(stringBuilder.ToString());
 
             m_TotalLength = m_CumArcLength[m_CumArcLength.Length - 1];
         }
@@ -57,7 +74,8 @@ namespace PolePosition
                 Vector3 carVec = (posIn - m_PathPos[i]);
                 float dotProd = Vector3.Dot(carVec, pathVec);
 
-                if (dotProd < 0)
+                // Corrección para ajustar cuando está justo entre dos puntos
+                if (dotProd < -0.5f)
                     continue;
 
                 if (dotProd > segLength)
