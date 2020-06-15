@@ -223,5 +223,13 @@ namespace PolePosition.Player
         {
             m_PlayerController.EngineStarted = false;
         }
+
+        /// <summary>
+        /// Change the text in the UI message
+        /// </summary>
+        public void SetUIText(string message, int fontSize = 30, Color? color = null)
+        {
+            m_UIManager.UpdateUIMessage(message, fontSize, color);
+        }
     }
 }

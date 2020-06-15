@@ -250,7 +250,7 @@ namespace PolePosition
         public override void OnStartClient()
         {
             base.OnStartClient();
-            uiManager.UpdateCountdown(4);
+            uiManager.UpdateUIMessage("Waiting for players", 62);
         }
 
         /// <summary>
@@ -261,7 +261,18 @@ namespace PolePosition
         [ClientRpc]
         void RpcUpdateCountdown(int value)
         {
-            uiManager.UpdateCountdown(value);
+            int maxCountdown = 4;
+            if (value > 0 && value < maxCountdown)
+            {
+                uiManager.UpdateUIMessage("" + value, 300);
+            }else if (value == 0)
+            {
+                uiManager.UpdateUIMessage("GO!", 300);
+            }
+            else
+            {
+                uiManager.UpdateUIMessage("");
+            }
         }
 
         /// <summary>

@@ -72,6 +72,11 @@ namespace PolePosition.Player
         private float m_SteerHelper = 0.8f;
         private float _currentLapTime = 0f;
         private bool _countingTime;
+
+        private float _maxWrongDirectionTime = 3.0f;
+        private float _timer;
+        private bool started;
+
         #endregion Variables
 
         #region Unity Callbacks
@@ -81,6 +86,8 @@ namespace PolePosition.Player
             m_Rigidbody = GetComponent<Rigidbody>();
             m_PlayerInfo = GetComponent<PlayerInfo>();
             EngineStarted = true;
+            started = false;
+            _timer = 0.0f;
         }
         
         /// <summary>
@@ -127,6 +134,29 @@ namespace PolePosition.Player
                 InputBrake = 999999999f;
             }
 
+
+            //If the player is going in the wrong direction
+            if (!Stopped && m_PlayerInfo.Direction < 0)
+            {
+                _timer += Time.deltaTime;
+                if (_timer >= 0.5f)
+                {
+                    m_PlayerInfo.SetUIText("Wrong Direction", 62);
+                }
+                if (_timer >= _maxWrongDirectionTime)
+                {
+                    _timer = 0.0f;
+                    RelocateCar();
+                    m_PlayerInfo.SetUIText("");
+
+                }
+            }
+            else if (!Stopped && m_PlayerInfo.Direction > 0)
+            {
+                _timer = 0.0f;
+                m_PlayerInfo.SetUIText("");
+            }
+            
             foreach (AxleInfo axleInfo in axleInfos)
             {
                 if (axleInfo.steering)

@@ -277,6 +277,15 @@ namespace PolePosition.Player
             CurrentLapCorrected -= 1;
             _crossedFinishLineBack = true;
         }
+
+        /// <summary>
+        /// Change the text of the UI Message
+        /// </summary>
+        public void SetUIText(string message, int fontSize = 30, Color? color = null)
+        {
+            _setupPlayer.SetUIText(message, fontSize, color);
+        }
+
         #endregion
     }
 }

@@ -171,27 +171,12 @@ namespace PolePosition.UI
             }
         }
         
-        public void UpdateCountdown(int countdown)
+        public void UpdateUIMessage(string message, int fontSize = 30, Color? color = null)
         {
-            int maxCountdown = 4;
-            if (countdown >= maxCountdown)
-            {
-                textCountDown.text = "Waiting for drivers...";
-                textCountDown.fontSize = 62;
-            }
-            else if (countdown > 0 && countdown < maxCountdown)
-            {
-                textCountDown.fontSize = 300;
-                textCountDown.text = "" + countdown;
-            }
-            else if (countdown == 0)
-            {
-                textCountDown.text = "GO";
-            }
-            else
-            {
-                textCountDown.text = "";
-            }
+            textCountDown.color = color ?? Color.red;
+            textCountDown.fontSize = fontSize;
+            textCountDown.text = message;
+            
         }
 
         public void AddPlayerResult(int position, Color color, string playerName, float raceTime, float bestLapTime)
