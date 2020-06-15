@@ -239,8 +239,9 @@ namespace PolePosition
             player.CurrentCircuitPosition = carProj;
             player.LookAtPoint = carDirection;
             player.ArcInfo = minArcL;
-            player.Direction = -Vector3.Cross(carProj, player.Speed).y;
+            player.Direction = Vector3.Angle(player.LookAtPoint - carProj, player.Speed);
             player.CurrentSegmentIdx = segIdx;
+
             return minArcL;
         }
         

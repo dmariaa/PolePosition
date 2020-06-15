@@ -134,9 +134,8 @@ namespace PolePosition.Player
                 InputBrake = 999999999f;
             }
 
-
             //If the player is going in the wrong direction
-            if (!Stopped && m_PlayerInfo.Direction < 0)
+            if (!Stopped && m_PlayerInfo.Direction > 90.0f)
             {
                 _timer += Time.deltaTime;
                 if (_timer >= 0.5f)
@@ -151,7 +150,7 @@ namespace PolePosition.Player
 
                 }
             }
-            else if (!Stopped && m_PlayerInfo.Direction > 0)
+            else if (!Stopped && m_PlayerInfo.Direction <= 90.0f)
             {
                 _timer = 0.0f;
                 m_PlayerInfo.SetUIText("");
