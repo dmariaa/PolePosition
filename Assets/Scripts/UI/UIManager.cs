@@ -20,7 +20,6 @@ namespace PolePosition.UI
 
         [Header("In-Game HUD")] [SerializeField]
         private GameObject inGameHUD;
-
         [SerializeField] private Text textSpeed;
         [SerializeField] private Text textLaps;
         [SerializeField] private Text textCurrentLap;
@@ -28,22 +27,21 @@ namespace PolePosition.UI
         [SerializeField] private Text textCountDown;
         [SerializeField] private PlayerInfoPanelController[] playerPositions;
 
-        [Header("Player Setup")] [SerializeField]
-        private GameObject playerSetup;
-
-        [SerializeField] private InputField _playerName;
-        [SerializeField] private ColorPicker _colorPicker;
-        [SerializeField] private Button _readyButton;
-
         [Header("Player Results")] [SerializeField]
         private GameObject _playerResults;
-
         [SerializeField] private GameObject _rankingPanel;
         [SerializeField] private PlayerResultsPanelController _playerResultsPanelController;
 
+        private GameObject _lobby;
+        public LobbyManager Lobby
+        {
+           get => _lobby.GetComponent<LobbyManager>();  
+        } 
+        
         private void Awake()
         {
             m_NetworkManager = FindObjectOfType<NetworkManager>();
+            _lobby = transform.Find("Canvas/Lobby").gameObject;
         }
 
         private void Start()
@@ -51,15 +49,13 @@ namespace PolePosition.UI
             buttonHost.onClick.AddListener(() => StartHost());
             buttonClient.onClick.AddListener(() => StartClient());
             buttonServer.onClick.AddListener(() => StartServer());
-            _readyButton.onClick.AddListener(() => PlayerReady());
-        
             ActivateMainMenu();
         }
         
         public void ActivateMainMenu()
         {
             inGameHUD.SetActive(false);
-            playerSetup.SetActive(false);
+            _lobby.SetActive(false);
             _playerResults.SetActive(false);
             mainMenu.SetActive(true);
         }
@@ -67,31 +63,31 @@ namespace PolePosition.UI
         public void ActivateInGameHUD()
         {
             mainMenu.SetActive(false);
-            playerSetup.SetActive(false);
+            _lobby.SetActive(false);
             _playerResults.SetActive(false);
             inGameHUD.SetActive(true);
         }
 
-        public void ActivatePlayerSetup()
+        public void ActivateLobby()
         {
             mainMenu.SetActive(false);
             inGameHUD.SetActive(false);
             _playerResults.SetActive(false);
-            playerSetup.SetActive(true);
+            _lobby.SetActive(true);
         }
 
         public void ActivatePlayerResults()
         {
             mainMenu.SetActive(false);
             inGameHUD.SetActive(false);
-            playerSetup.SetActive(false);
+            _lobby.SetActive(false);
             _playerResults.SetActive(true);
         }
 
         private void StartHost()
         {
             m_NetworkManager.StartHost();
-            ActivatePlayerSetup();
+            ActivateLobby();
         }
 
         private void StartClient()
@@ -99,7 +95,7 @@ namespace PolePosition.UI
             var text = inputFieldIP.text;
             m_NetworkManager.networkAddress = text==string.Empty ? "localhost" : text;
             m_NetworkManager.StartClient();        
-            ActivatePlayerSetup();
+            ActivateLobby();
         }
 
         private void StartServer()
@@ -107,33 +103,7 @@ namespace PolePosition.UI
             m_NetworkManager.StartServer();
             ActivateInGameHUD();
         }
-
-
-        /// <summary>
-        /// Called when user plays ready button
-        /// </summary>
-        private void PlayerReady()
-        {
-            CreatePlayerMessage message = new CreatePlayerMessage()
-            {
-                Name = _playerName.text,
-                Color = _colorPicker.SelectedColor
-            };
-
-            NetworkClient.Send(message);
-            ActivateInGameHUD();
-        }
-
-        public void SetConfigUIName(string playerName)
-        {
-            _playerName.text = playerName;
-        }
-
-        public void SetConfigUIColor(Color color)
-        {
-            _colorPicker.SelectedColor = color;
-        }
-
+        
         public void SetNumberOfLaps(int numberOfLaps)
         {
             textLaps.text = "" + numberOfLaps;
@@ -171,27 +141,11 @@ namespace PolePosition.UI
             }
         }
         
-        public void UpdateCountdown(int countdown)
+        public void UpdateUIMessage(string message, int fontSize = 30, Color? color = null)
         {
-            int maxCountdown = 4;
-            if (countdown >= maxCountdown)
-            {
-                textCountDown.text = "Waiting for drivers...";
-                textCountDown.fontSize = 62;
-            }
-            else if (countdown > 0 && countdown < maxCountdown)
-            {
-                textCountDown.fontSize = 300;
-                textCountDown.text = "" + countdown;
-            }
-            else if (countdown == 0)
-            {
-                textCountDown.text = "GO";
-            }
-            else
-            {
-                textCountDown.text = "";
-            }
+            textCountDown.color = color ?? Color.red;
+            textCountDown.fontSize = fontSize;
+            textCountDown.text = message;
         }
 
         public void AddPlayerResult(int position, Color color, string playerName, float raceTime, float bestLapTime)

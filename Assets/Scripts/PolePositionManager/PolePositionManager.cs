@@ -2,105 +2,99 @@
 using System.Collections.Generic;
 using System.Linq;
 using Mirror;
+using PolePosition;
 using PolePosition.Player;
+using PolePosition.StateMachine;
 using PolePosition.UI;
 using UnityEngine;
 using NetworkBehaviour = Mirror.NetworkBehaviour;
 
-namespace PolePosition
+namespace PolePositionManager
 {
     public class PolePositionManager : NetworkBehaviour
     {
-        private enum RaceStates
-        {
-            WAITING_FOR_PLAYERS,
-            COUNT_DOWN,
-            IN_RACE,
-            RACE_FINISHED
-        }
-        
-        private RaceStates _raceState = RaceStates.WAITING_FOR_PLAYERS;
-
         public int MaxNumPlayers = 4;
         public int NumberOfLaps = 4;
         public UIManager uiManager;
         public CircuitController m_CircuitController;
 
-        private readonly Dictionary<int, PlayerInfo> m_Players = new Dictionary<int, PlayerInfo>();
+        /// <summary>
+        /// Dictionary of ID -> playerInfos
+        /// Used in server only
+        /// </summary>
+        private readonly Dictionary<int, PlayerInfo> _Players = new Dictionary<int, PlayerInfo>();
+        public Dictionary<int, PlayerInfo> Players
+        {
+            get => _Players;
+        }
+        
+        /// <summary>
+        /// State machine to manage states and transitions
+        /// Used in server only
+        /// </summary>
+        private StateMachine _stateMachine;
+        
+        /// <summary>
+        /// Debugging spheres
+        /// </summary>
         private GameObject[] m_DebuggingSpheres;
 
-        private float timer;
-
-        private int RaceSemaphore;
-
+        #region Callbacks
         private void Awake()
         {
             if (uiManager == null) uiManager = FindObjectOfType<UIManager>();
             if (m_CircuitController == null) m_CircuitController = FindObjectOfType<CircuitController>();
-
-            m_DebuggingSpheres = new GameObject[MaxNumPlayers];
-            for (int i = 0; i < MaxNumPlayers; ++i)
-            {
-                m_DebuggingSpheres[i] = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                m_DebuggingSpheres[i].GetComponent<SphereCollider>().enabled = false;
-            }
-
-            RaceSemaphore = 4;
         }
 
+        public override void OnStartServer()
+        {
+            base.OnStartServer();
+            
+            if(isServer)
+            {
+                m_DebuggingSpheres = new GameObject[MaxNumPlayers];
+                for (int i = 0; i < MaxNumPlayers; ++i)
+                {
+                    m_DebuggingSpheres[i] = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                    m_DebuggingSpheres[i].GetComponent<SphereCollider>().enabled = false;
+                    m_DebuggingSpheres[i].transform.localScale = Vector3.one * 0.5f;
+                }
+
+                // Initialize state machine
+                _stateMachine = new StateMachine();
+                _stateMachine.ChangeState(new StateInLobby(this));
+            }
+        }
+        
         [ServerCallback]
         private void Update()
         {
-            if (m_Players.Count == 0)
-                return;
-
-            switch (_raceState)
-            {
-                case RaceStates.WAITING_FOR_PLAYERS:
-                    if (m_Players.Count == MaxNumPlayers)
-                    {
-                        timer = 0;
-                        _raceState = RaceStates.COUNT_DOWN;
-                    }
-                    break;
-
-                case RaceStates.COUNT_DOWN:
-                    timer += Time.deltaTime;
-                    if (RaceSemaphore >= 0 && timer >= 1.0f)
-                    {
-                        RaceSemaphore--;
-                        RpcUpdateCountdown(RaceSemaphore);
-                        timer = 0.0f;
-                    }
-                    else if (RaceSemaphore <= 0)
-                    {
-                        StartRace();
-                        _raceState = RaceStates.IN_RACE;
-                    }
-                    break;
-
-                case RaceStates.IN_RACE:
-                    timer += Time.deltaTime;
-                    if (timer >= 1.0f && RaceSemaphore > -1)
-                    {
-                        RaceSemaphore--;
-                        RpcUpdateCountdown(RaceSemaphore);
-                    }
-                    UpdateRaceProgress();
-                    break;
-                case RaceStates.RACE_FINISHED:
-                    break;
-            }   
+            _stateMachine.Update();
         }
+        #endregion
+        
+        #region State management
+        /// <summary>
+        /// Changes state in state machine
+        /// Server side only
+        /// </summary>
+        /// <param name="newState">new State</param>
+        [Server]
+        public void StateChange(IState newState)
+        {
+            _stateMachine.ChangeState(newState);
+        }
+        #endregion
 
+        #region Server side methods
         /// <summary>
         /// Starts the race
         /// Server side only
         /// </summary>
         [Server]
-        private void StartRace()
+        public void StartRace()
         {
-            foreach(var player in m_Players)
+            foreach(var player in _Players)
             {
                 player.Value.RpcLaunchPlayer();
             }
@@ -111,10 +105,10 @@ namespace PolePosition
         /// Server only
         /// </summary>
         [Server]
-        void FinishRace()
+        public void FinishRace()
         {
-            PlayerInfo[] playerInfos = m_Players.Values.ToArray();
-            Array.Sort(playerInfos, (one, two) => one.CurrentPosition < two.CurrentPosition ? 1 : -1);
+            PlayerInfo[] playerInfos = _Players.Values.ToArray();
+            Array.Sort(playerInfos, (one, two) => one.CurrentPosition > two.CurrentPosition ? 1 : -1);
             foreach (var playerInfo in playerInfos)
             {
                 RpcAddPlayerResult(playerInfo.CurrentPosition, playerInfo.Color, playerInfo.Name, 
@@ -122,7 +116,6 @@ namespace PolePosition
             }
 
             RpcShowResults();
-            _raceState = RaceStates.RACE_FINISHED;
         }
 
         /// <summary>
@@ -133,7 +126,7 @@ namespace PolePosition
         [Server]
         public void AddPlayer(PlayerInfo player)
         {
-            m_Players.Add(player.ID, player);
+            _Players.Add(player.ID, player);
         }
 
         /// <summary>
@@ -144,9 +137,19 @@ namespace PolePosition
         [Server]
         public void RemovePlayer(PlayerInfo player)
         {
-            m_Players.Remove(player.ID);
+            _Players.Remove(player.ID);
         }
 
+        /// <summary>
+        /// Disables collisions betweeen players
+        /// </summary>
+        [Server]
+        public void DisablePlayersCollisions(bool ignore = true)
+        {
+            int layer = _Players[0].gameObject.layer;
+            Physics.IgnoreLayerCollision(layer, layer, ignore);            
+        }
+        
         /// <summary>
         /// Updates car race progress
         /// - Calculates players position in circuit
@@ -158,27 +161,28 @@ namespace PolePosition
         /// TODO: It has something to do with the call to the circuit what is a
         /// TODO: MonoBehabior not a NetworkBehavior
         /// </summary>
-        public void UpdateRaceProgress()
+        public void UpdateRaceProgress(out int playersFinished)
         {
             // Update car arc-lengths
             float circuitLength = m_CircuitController.CircuitLength;
-            KeyValuePair<int, float>[] arcLengths = new KeyValuePair<int, float>[m_Players.Count];
+            KeyValuePair<int, float>[] arcLengths = new KeyValuePair<int, float>[_Players.Count];
             int i = 0;
             int finishedPlayers = 0;
             
-            foreach (var player in m_Players)
+            foreach (var player in _Players)
             {
                 PlayerInfo playerInfo = player.Value;
                 ComputeCarArcLength(ref playerInfo);
-                int j = 0;
                 
                 // Distance covered in circuit
                 float coveredCircuitDistance = playerInfo.CurrentLapCorrected==0 ?
                     playerInfo.ArcInfo - circuitLength:
                     circuitLength * (playerInfo.CurrentLapCorrected - 1) + playerInfo.ArcInfo;
+
+                playerInfo.TotalDistance = coveredCircuitDistance;
                 
                 // Debug.LogFormat("ArcInfo: {0}, Covered length: {1}", playerInfo.ArcInfo, coveredCircuitDistance);
-                arcLengths[i++] = new KeyValuePair<int, float>(playerInfo.ID, coveredCircuitDistance);
+                // arcLengths[i++] = new KeyValuePair<int, float>(playerInfo.ID, coveredCircuitDistance);
 
                 if (playerInfo.AllLapsFinished)
                 {
@@ -186,18 +190,18 @@ namespace PolePosition
                 }
             }
 
-            // Race has finished
-            if (finishedPlayers == m_Players.Count)
-            {
-                FinishRace();
-                return;
-            }
+            playersFinished = finishedPlayers;
+        }
 
-            Array.Sort(arcLengths, (one, other) => one.Value < other.Value ? 1 : -1);
-            i = 1;
-            foreach (var arcLength in arcLengths)
+        [Server]
+        public void UpdatePlayersPositions()
+        {
+            PlayerInfo[] players = _Players.Values.ToArray();
+            Array.Sort(players, (one, other) => one.TotalDistance < other.TotalDistance ? 1 : -1);
+            int i = 1;
+            foreach (var player in players)
             {
-                PlayerInfo playerInfo = m_Players[arcLength.Key];
+                PlayerInfo playerInfo = _Players[player.ID];
                 playerInfo.CurrentPosition = i++;
             }
         }
@@ -221,6 +225,7 @@ namespace PolePosition
             Vector3 carProj;
             Vector3 carDirection;
 
+            // This call crashes if ComputeArcLength branded as [Server] or [ServerCallback]
             float minArcL =
                 this.m_CircuitController.ComputeClosestPointArcLength(carPos, out carDirection, out segIdx, out carProj, out carDist);
 
@@ -239,29 +244,38 @@ namespace PolePosition
             player.CurrentCircuitPosition = carProj;
             player.LookAtPoint = carDirection;
             player.ArcInfo = minArcL;
-            player.Direction = -Vector3.Cross(carProj, player.Speed).y;
+            player.Direction = Vector3.Dot((carDirection - carProj).normalized, player.Speed.normalized);
+            // Debug.Log(player.Direction);
+            // Debug.DrawRay(player.transform.position, (carDirection - carProj).normalized * 3, Color.red);
+            // Debug.DrawRay(player.transform.position, player.Speed.normalized * 3, Color.green);
             player.CurrentSegmentIdx = segIdx;
             return minArcL;
         }
-        
-        /// <summary>
-        /// Called when this object spawns on client
-        /// </summary>
-        public override void OnStartClient()
-        {
-            base.OnStartClient();
-            uiManager.UpdateCountdown(4);
-        }
+        #endregion
 
+        #region Client calls
         /// <summary>
         /// Updates client ui countdown
         /// Client side, called from server
         /// </summary>
         /// <param name="value">countdown value</param>
         [ClientRpc]
-        void RpcUpdateCountdown(int value)
+        public void RpcUpdateCountdown(int value)
         {
-            uiManager.UpdateCountdown(value);
+            int maxCountdown = 4;
+
+            if (value > 0 && value < maxCountdown)
+            {
+                uiManager.UpdateUIMessage(""+value, 300);
+            }
+            else if (value == 0)
+            {
+                uiManager.UpdateUIMessage("GO", 300);
+            }
+            else
+            {
+                uiManager.UpdateUIMessage("");
+            }
         }
 
         /// <summary>
@@ -281,12 +295,22 @@ namespace PolePosition
         }
 
         /// <summary>
-        /// Shows results table
+        /// Called to show player results in client
         /// </summary>
         [ClientRpc]
-        void RpcShowResults()
+        public void RpcShowResults()
         {
             uiManager.ActivatePlayerResults();
         }
+
+        /// <summary>
+        /// Called to show in game HUD in clients
+        /// </summary>
+        [ClientRpc]
+        public void RpcShowInGameHUD()
+        {
+            uiManager.ActivateInGameHUD();
+        }
+        #endregion
     }
 }

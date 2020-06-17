@@ -1,16 +1,17 @@
 using Mirror;
 using PolePosition.Player;
+using PolePosition.UI;
 using UnityEngine;
 
 namespace PolePosition
 {
     public class PolePositionNetworkManager : NetworkManager
     {
-        public PolePositionManager _polePositionManager;
+        public PolePositionManager.PolePositionManager _polePositionManager;
 
         public override void Awake()
         {
-            if(_polePositionManager==null) _polePositionManager = FindObjectOfType<PolePositionManager>();
+            if(_polePositionManager==null) _polePositionManager = FindObjectOfType<PolePositionManager.PolePositionManager>();
         }
 
         public override void OnStartServer()
@@ -28,18 +29,29 @@ namespace PolePosition
             GameObject player = startPos != null
                 ? Instantiate(playerPrefab, startPos.position, startPos.rotation)
                 : Instantiate(playerPrefab);
-
-            NetworkServer.AddPlayerForConnection(connection, player);
             
             PlayerInfo playerInfo = player.GetComponent<PlayerInfo>();
             playerInfo.ID = connection.connectionId;
-            playerInfo.Name = string.IsNullOrEmpty(message.Name) ? string.Format("Player{0}", startPositionIndex) : message.Name;
+            playerInfo.Name = message.Name;
             playerInfo.Color = message.Color;
             playerInfo.CurrentPosition = startPositionIndex;
             playerInfo.CurrentLap = 0;
             playerInfo.NumberOfLaps = _polePositionManager.NumberOfLaps; 
-            
+
+            NetworkServer.AddPlayerForConnection(connection, player);
+
             _polePositionManager.AddPlayer(playerInfo);
+        }
+
+        public override void OnClientConnect(NetworkConnection conn)
+        {
+            base.OnClientConnect(conn);
+            CreatePlayerMessage message = new CreatePlayerMessage()
+            {
+                Name = string.Format("Player {0}", conn.connectionId),
+                Color = ColorPicker.GetRandomColor()
+            };
+            NetworkClient.Send(message);
         }
 
         public override void OnClientDisconnect(NetworkConnection conn)
