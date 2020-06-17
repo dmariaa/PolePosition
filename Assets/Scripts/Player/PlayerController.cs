@@ -114,7 +114,7 @@ namespace PolePosition.Player
                 m_PlayerInfo.TotalRaceTime += Time.deltaTime;
             }
         }
-
+        
         [ServerCallback]
         public void FixedUpdate()
         {
@@ -186,9 +186,7 @@ namespace PolePosition.Player
         /// <summary>
         /// Disable this rigidBody so no collisions and
         /// other physics act on it
-        /// Server only
         /// </summary>
-        [Server]
         public void disableRigidBody()
         {
             m_Rigidbody.isKinematic = true;
@@ -198,9 +196,7 @@ namespace PolePosition.Player
         /// <summary>
         /// Enables this rigidBody so no collisions and other physics
         /// act on it
-        /// Server only
         /// </summary>
-        [Server]
         public void enableRigidBody()
         {
             m_Rigidbody.isKinematic = false;
@@ -330,5 +326,15 @@ namespace PolePosition.Player
             CurrentRotation = transform.eulerAngles.y;
         }
         #endregion
+
+        // Debugging collissions
+        private void OnCollisionEnter(Collision collision)
+        {
+            if(collision.gameObject.name.StartsWith("Player"))
+            {
+                Debug.LogFormat("Collision between {0} and {1}, generated in {2}", name, collision.gameObject.name,
+                    isServer ? "Server" : "Client");
+            }
+        }
     }
 }

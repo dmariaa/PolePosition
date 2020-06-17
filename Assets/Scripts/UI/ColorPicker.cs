@@ -2,7 +2,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace PolePosition
+namespace PolePosition.UI
 {
     public class ColorPicker : MonoBehaviour
     {
@@ -184,6 +184,16 @@ namespace PolePosition
             {
                 _selectedColor = value;
                 CarMaterial.color = _selectedColor;
+                
+                foreach (var toggle in GetComponentsInChildren<Toggle>())
+                {
+                    Image image = toggle.transform.Find("Button").GetComponent<Image>();
+                    if (image.color == _selectedColor)
+                    {
+                        toggle.isOn = true;
+                        return;
+                    }
+                }
             }
         }
 
@@ -215,7 +225,11 @@ namespace PolePosition
         
             Image image = colorButton.transform.Find("Button").GetComponent<Image>();
             image.color = color;
-
+            if (image.color == SelectedColor)
+            {
+                toggle.isOn = true;
+            }
+            
             toggle.onValueChanged.AddListener((isOn) =>
             {
                 if (isOn)
@@ -223,6 +237,12 @@ namespace PolePosition
                     SelectedColor = image.color;
                 }
             });
+        }
+
+        public static Color GetRandomColor()
+        {
+            int color = Random.Range(0, Colors.Count);
+            return Colors[color];
         }
     }
 }

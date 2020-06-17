@@ -33,17 +33,24 @@ namespace PolePosition.Player
             m_BodyMaterial = carBody.GetComponent<Renderer>().materials[1];
         }
 
+        public override void OnStartClient()
+        {
+            base.OnStartClient();
+            m_UIManager.Lobby.AddPlayer(m_PlayerInfo);
+        }
+
+        public override void OnNetworkDestroy()
+        {
+            m_UIManager.Lobby.RemovePlayer(m_PlayerInfo);
+            base.OnNetworkDestroy();
+        }
+
         // Start is called before the first frame update
         void Start()
         {
             // Security measure, just in case for some reason 
             // player input controller is enabled on start
             _playerInputController.enabled = false;
-
-            if (isLocalPlayer)
-            {
-                ConfigureCamera();
-            }
 
             if (isServer)
             {
@@ -58,13 +65,13 @@ namespace PolePosition.Player
                 m_PlayerController.disableRigidBody();
             }
         }
-
+        
         /// <summary>
         /// Setups camera
         /// Client only
         /// </summary>
         [Client]
-        void ConfigureCamera()
+        public void ConfigureCamera()
         {
             if (Camera.main != null)
             {
@@ -97,20 +104,6 @@ namespace PolePosition.Player
         }
 
         /// <summary>
-        /// Sets current player name
-        /// Client only
-        /// </summary>
-        /// <param name="name">Player name</param>
-        [Client]
-        public void SetPlayerName(string name)
-        {
-            if(isLocalPlayer)
-            {
-                m_UIManager.SetConfigUIName(name);
-            }
-        }
-
-        /// <summary>
         /// Sets car color
         /// Client only
         /// </summary>
@@ -118,11 +111,6 @@ namespace PolePosition.Player
         [Client]
         public void SetPlayerColor(Color color)
         {
-            if(isLocalPlayer)
-            {
-                m_UIManager.SetConfigUIColor(color);
-            }
-            
             m_BodyMaterial.color = color;
         }
 

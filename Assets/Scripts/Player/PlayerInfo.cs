@@ -89,16 +89,49 @@ namespace PolePosition.Player
         /// Forward looking vector in circuit
         /// </summary>
         [SyncVar] public Vector3 LookAtPoint;
+
+        [SyncVar(hook = nameof(OnChangeIsReady))] public bool IsReady;
+        #endregion
+
+        #region Delegates and events
+        public delegate void OnChangeNameDelegate(string playerName);
+        public event OnChangeNameDelegate OnChangeNameEvent;
+
+        public delegate void OnChangeColorDelegate(Color color);
+        public event OnChangeColorDelegate OnChangeColorEvent;
+
+        public delegate void OnChangeIsReadyDelegate(bool isReady);
+        public event OnChangeIsReadyDelegate OnChangeIsReadyEvent;
         #endregion
 
         #region SyncVars Hooks
+        private void OnChangeIsReady(bool oldIsReady, bool newIsReady)
+        {
+            if (OnChangeIsReadyEvent != null)
+            {
+                OnChangeIsReadyEvent(newIsReady);
+            }
+            
+            _setupPlayer.UpdatePosition();
+        }
         private void OnChangeName(string oldName, string newName)
         {
-            _setupPlayer.SetPlayerName(newName);
+            if (OnChangeNameEvent != null)
+            {
+                OnChangeNameEvent(newName);
+            }
+            
+            _setupPlayer.UpdatePosition();
         }
         private void OnChangeColor(Color oldColor, Color newColor)
         {
-            _setupPlayer.SetPlayerColor(newColor);
+            _setupPlayer.SetPlayerColor(newColor);    
+            _setupPlayer.UpdatePosition();        // TODO: Change UI to event subscription
+
+            if (OnChangeColorEvent != null)
+            {
+                OnChangeColorEvent(newColor);
+            }
         }
 
         private void OnChangePosition(int oldPosition, int newPosition)
@@ -149,7 +182,18 @@ namespace PolePosition.Player
         }
         #endregion
 
-        #region RpcCalls
+        #region Client RpcCalls and Commands
+
+        [ClientRpc]
+        public void RpcConfigureCamera()
+        {
+            if (isLocalPlayer)
+            {
+                _setupPlayer.ConfigureCamera();    
+            }
+            
+        }
+        
         /// <summary>
         /// Called from server to launch player control
         /// </summary>
@@ -166,6 +210,24 @@ namespace PolePosition.Player
         public void RpcStopPlayer()
         {
             _setupPlayer.StopPlayerController();
+        }
+        
+        [Command]
+        public void CmdSetName(string playerName)
+        {
+            Name = playerName;
+        }
+
+        [Command]
+        public void CmdSetColor(Color color)
+        {
+            Color = color;
+        }
+
+        [Command]
+        public void CmdSetIsReady(bool ready)
+        {
+            IsReady = ready;
         }
         #endregion
 
@@ -214,7 +276,7 @@ namespace PolePosition.Player
         {
             _setupPlayer = GetComponent<SetupPlayer>();
         }
-
+        
         public override string ToString()
         {
             return string.Format(_printString,
