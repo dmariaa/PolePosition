@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using PolePosition.Player;
 
-namespace PolePositionManager
+namespace PolePosition.Manager
 {
     /// <summary>
     /// State to manage lobby
@@ -35,7 +35,14 @@ namespace PolePositionManager
 
             if (numberOfReadyPlayers == _polePositionManager.MaxNumPlayers)
             {
-                _polePositionManager.StateChange(new StateInRace(_polePositionManager));
+                if (_polePositionManager.QualificationLap)
+                {
+                    _polePositionManager.StateChange(new StateInQualificationRound(_polePositionManager));  
+                }
+                else
+                {
+                    _polePositionManager.StateChange(new StateInRace(_polePositionManager));
+                }
             }
         }
 

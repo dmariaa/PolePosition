@@ -1,5 +1,6 @@
 ﻿using System;
 using Mirror;
+using PolePosition.UI;
 using UnityEngine;
 
 namespace PolePosition.Player
@@ -184,6 +185,12 @@ namespace PolePosition.Player
 
         #region Client RpcCalls and Commands
         [ClientRpc]
+        public void RpcShowHUDMessage(string message, int size)
+        {
+            _setupPlayer.UpdateHUDMessage(message, size);
+        }
+
+        [ClientRpc]
         public void RpcActivateHostLobbyButtons(bool activate, int id)
         {
             if (ID == id && isLocalPlayer)
@@ -279,7 +286,6 @@ namespace PolePosition.Player
         
         /// <summary>
         /// Total circuit distance covered
-        /// TODO: Remove if unused
         /// </summary>
         public float TotalDistance = 0;
         

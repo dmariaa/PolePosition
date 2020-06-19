@@ -1,5 +1,5 @@
 ﻿using Mirror;
-using System.Threading;
+using PolePosition.Manager;
 using PolePosition.UI;
 using UnityEngine;
 
@@ -18,14 +18,14 @@ namespace PolePosition.Player
         private Material m_BodyMaterial;
 
         private PlayerInputController _playerInputController;
-        public PolePositionManager.PolePositionManager _polePositionManager;
+        public PolePositionManager _polePositionManager;
 
         private void Awake()
         {
             m_PlayerInfo = GetComponent<PlayerInfo>();
             m_PlayerController = GetComponent<PlayerController>();
             m_UIManager = FindObjectOfType<UIManager>();
-            _polePositionManager = FindObjectOfType<PolePositionManager.PolePositionManager>();
+            _polePositionManager = FindObjectOfType<PolePositionManager>();
 
             // Controller for player input
             _playerInputController = GetComponent<PlayerInputController>();
@@ -46,12 +46,12 @@ namespace PolePosition.Player
             
         }
 
-        public override void OnNetworkDestroy()
+        public override void OnStopClient()
         {
             m_UIManager.Lobby.RemovePlayer(m_PlayerInfo);
-            base.OnNetworkDestroy();
+            base.OnStopClient();
         }
-
+        
         // Start is called before the first frame update
         void Start()
         {
@@ -84,6 +84,33 @@ namespace PolePosition.Player
             {
                 Camera.main.gameObject.GetComponent<CameraController>().m_Focus = this.gameObject;
             }
+        }
+        
+        [Client]
+        public void UpdateHUDMessage(string message, int size = 30, Color? color = null)
+        {
+            if(isLocalPlayer)
+            {
+                m_UIManager.UpdateUIMessage(message, size, color);
+            }
+        }
+
+        [ClientRpc]
+        public void RpcUpdateHUDMessage3(string message, int size, Color color)
+        {
+            UpdateHUDMessage(message, size, color);
+        }
+
+        [ClientRpc]
+        public void RpcUpdateHUDMessage2(string message, int size)
+        {
+            UpdateHUDMessage(message, size);
+        }
+
+        [ClientRpc]
+        public void RpcUpdateHUDMessage1(string message)
+        {
+            UpdateHUDMessage(message);
         }
 
         /// <summary>
@@ -223,6 +250,18 @@ namespace PolePosition.Player
         public void StopCar()
         {
             m_PlayerController.EngineStarted = false;
+        }
+
+        [Server]
+        public void StartCar()
+        {
+            m_PlayerController.EngineStarted = true;
+        }
+        
+        [Server]
+        public void RelocateCar(Vector3 position, Quaternion rotation)
+        {
+            m_PlayerController.RelocateCar(position, rotation);
         }
     }
 }

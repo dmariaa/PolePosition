@@ -2,14 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using Mirror;
-using PolePosition;
 using PolePosition.Player;
 using PolePosition.StateMachine;
 using PolePosition.UI;
 using UnityEngine;
 using NetworkBehaviour = Mirror.NetworkBehaviour;
 
-namespace PolePositionManager
+namespace PolePosition.Manager
 {
     public class PolePositionManager : NetworkBehaviour
     {
@@ -19,6 +18,12 @@ namespace PolePositionManager
         [SyncVar(hook = nameof(OnChangeQualificationLap))] public bool QualificationLap = true;
         public UIManager uiManager;
         public CircuitController m_CircuitController;
+
+        private Guid _globalGuid;
+        public Guid GlobalGUID
+        {
+            get => _globalGuid;
+        }
 
         /// <summary>
         /// Dictionary of ID -> playerInfos
@@ -34,7 +39,7 @@ namespace PolePositionManager
         /// State machine to manage states and transitions
         /// Used in server only
         /// </summary>
-        private StateMachine _stateMachine;
+        private StateMachine.StateMachine _stateMachine;
         
         /// <summary>
         /// Debugging spheres
@@ -46,6 +51,7 @@ namespace PolePositionManager
         {
             if (uiManager == null) uiManager = FindObjectOfType<UIManager>();
             if (m_CircuitController == null) m_CircuitController = FindObjectOfType<CircuitController>();
+            _globalGuid = Guid.NewGuid();
         }
 
         public override void OnStartClient()
@@ -81,7 +87,7 @@ namespace PolePositionManager
                 }
 
                 // Initialize state machine
-                _stateMachine = new StateMachine();
+                _stateMachine = new StateMachine.StateMachine();
                 _stateMachine.ChangeState(new StateInLobby(this));
             }
         }
@@ -127,6 +133,8 @@ namespace PolePositionManager
         [Server]
         public void FinishRace()
         {
+            RpcClearResults();
+            
             PlayerInfo[] playerInfos = _Players.Values.ToArray();
             Array.Sort(playerInfos, (one, two) => one.CurrentPosition > two.CurrentPosition ? 1 : -1);
             foreach (var playerInfo in playerInfos)
@@ -146,6 +154,7 @@ namespace PolePositionManager
         [Server]
         public void AddPlayer(PlayerInfo player)
         {
+            player.GetComponent<PlayerMatchChecker>().matchId = _globalGuid;
             if (_currentLobbyHostId == -1)
             {
                 _currentLobbyHostId = player.ID;
@@ -182,7 +191,7 @@ namespace PolePositionManager
         public void DisablePlayersCollisions(bool ignore = true)
         {
             int layer = _Players[0].gameObject.layer;
-            Physics.IgnoreLayerCollision(layer, layer, ignore);            
+            Physics.IgnoreLayerCollision(layer, layer, ignore);
         }
         
         /// <summary>
@@ -196,30 +205,34 @@ namespace PolePositionManager
         /// TODO: It has something to do with the call to the circuit what is a
         /// TODO: MonoBehabior not a NetworkBehavior
         /// </summary>
-        public void UpdateRaceProgress(out int playersFinished)
+        public void UpdateRaceProgress(float raceTimer, out int playersFinished)
         {
             // Update car arc-lengths
             float circuitLength = m_CircuitController.CircuitLength;
-            KeyValuePair<int, float>[] arcLengths = new KeyValuePair<int, float>[_Players.Count];
             int i = 0;
             int finishedPlayers = 0;
             
             foreach (var player in _Players)
             {
                 PlayerInfo playerInfo = player.Value;
-                ComputeCarArcLength(ref playerInfo);
+                if (!playerInfo.AllLapsFinished)
+                {
+                    ComputeCarArcLength(ref playerInfo);
                 
-                // Distance covered in circuit
-                float coveredCircuitDistance = playerInfo.CurrentLapCorrected==0 ?
-                    playerInfo.ArcInfo - circuitLength:
-                    circuitLength * (playerInfo.CurrentLapCorrected - 1) + playerInfo.ArcInfo;
+                    // Distance covered in circuit
+                    float coveredCircuitDistance = playerInfo.CurrentLapCorrected==0 ?
+                        playerInfo.ArcInfo - circuitLength:
+                        circuitLength * (playerInfo.CurrentLapCorrected - 1) + playerInfo.ArcInfo;
 
-                playerInfo.TotalDistance = coveredCircuitDistance;
-                
-                // Debug.LogFormat("ArcInfo: {0}, Covered length: {1}", playerInfo.ArcInfo, coveredCircuitDistance);
-                // arcLengths[i++] = new KeyValuePair<int, float>(playerInfo.ID, coveredCircuitDistance);
+                    playerInfo.TotalDistance = coveredCircuitDistance;
+                    playerInfo.TotalRaceTime = raceTimer;
 
-                if (playerInfo.AllLapsFinished)
+                    if (playerInfo.AllLapsFinished)
+                    {
+                        playerInfo.RpcShowHUDMessage("Race finished", 100);
+                    }
+                }
+                else
                 {
                     finishedPlayers++;
                 }
@@ -232,7 +245,26 @@ namespace PolePositionManager
         public void UpdatePlayersPositions()
         {
             PlayerInfo[] players = _Players.Values.ToArray();
-            Array.Sort(players, (one, other) => one.TotalDistance < other.TotalDistance ? 1 : -1);
+            Array.Sort(players, (one, other) =>
+            {
+                if (one.AllLapsFinished && other.AllLapsFinished)
+                {
+                    return one.TotalRaceTime > other.TotalRaceTime ? 1 : -1;
+                }
+
+                if (one.AllLapsFinished && !other.AllLapsFinished)
+                {
+                    return -1;
+                }
+
+                if (!one.AllLapsFinished && other.AllLapsFinished)
+                {
+                    return 1;
+                }
+
+                return one.TotalDistance < other.TotalDistance ? 1 : -1;
+            });
+            
             int i = 1;
             foreach (var player in players)
             {
@@ -267,11 +299,14 @@ namespace PolePositionManager
             this.m_DebuggingSpheres[ID].transform.position = carProj;
             
             // Has the player crossed finish line?
+            // Debug.LogFormat("Current: {0}, New: {1}", player.CurrentSegmentIdx, segIdx);
             if(player.CurrentSegmentIdx==m_CircuitController.CircuitNumberOfSegments - 1 && segIdx==0)
             {
+                // Debug.LogFormat("Cambio de vuelta hacia delante");
                 player.CrossedFinishLineForward();
             } else if (player.CurrentSegmentIdx == 0 && segIdx == m_CircuitController.CircuitNumberOfSegments - 1)
             {
+                // Debug.LogFormat("Cambio de vuelta hacia atras");
                 player.CrossedFinishLineBackwards();
             }
             
@@ -338,13 +373,20 @@ namespace PolePositionManager
             uiManager.ActivatePlayerResults();
         }
 
+        [ClientRpc]
+        public void RpcClearResults()
+        {
+            uiManager.ClearPlayerResults();
+        }
+
         /// <summary>
         /// Called to show in game HUD in clients
         /// </summary>
         [ClientRpc]
-        public void RpcShowInGameHUD()
+        public void RpcShowInGameHUD(bool qualifying)
         {
             uiManager.ActivateInGameHUD();
+            uiManager.ShowPanelPositions(!qualifying);
         }
         #endregion
 

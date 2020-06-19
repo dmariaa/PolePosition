@@ -1,7 +1,5 @@
 ﻿using System;
-using Assets.Scripts.UI;
 using Mirror;
-using PolePosition;
 using PolePosition.Player;
 using UnityEngine;
 using UnityEngine.UI;
@@ -26,6 +24,7 @@ namespace PolePosition.UI
         [SerializeField] private Text textCurrentLap;
         [SerializeField] private Text textCurrentLapTime;
         [SerializeField] private Text textCountDown;
+        [SerializeField] private RectTransform panelPositions;
         [SerializeField] private PlayerInfoPanelController[] playerPositions;
 
         [Header("Player Results")] [SerializeField]
@@ -129,7 +128,6 @@ namespace PolePosition.UI
         
         public void UpdatePlayersPositions(PlayerInfo playerInfo)
         {
-            // Debug.LogFormat("Setting player position {0}", playerInfo);
             int position = playerInfo.CurrentPosition - 1;
             if(position >= 0 && position < playerPositions.Length)
             {
@@ -154,6 +152,20 @@ namespace PolePosition.UI
             var panelTransform = _rankingPanel.transform;
             PlayerResultsPanelController panel = Instantiate(_playerResultsPanelController, panelTransform);
             panel.UpdateData(position, color, playerName,raceTime, bestLapTime);
+        }
+
+        public void ClearPlayerResults()
+        {
+            var panelTransform = _rankingPanel.transform;
+            foreach (var childPlayerResultsPanelController in panelTransform.GetComponentsInChildren<PlayerResultsPanelController>())
+            {
+                Destroy(childPlayerResultsPanelController.gameObject);
+            }
+        }
+
+        public void ShowPanelPositions(bool show)
+        {
+            panelPositions.gameObject.SetActive(show);
         }
     }
 }

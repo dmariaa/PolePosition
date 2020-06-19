@@ -81,6 +81,7 @@ GameObject:
   - component: {fileID: 449604030476931776}
   - component: {fileID: 6346869062069434778}
   - component: {fileID: 2697569808015383802}
+  - component: {fileID: 9157084183942963140}
   m_Layer: 9
   m_Name: Player
   m_TagString: Untagged
@@ -210,6 +211,7 @@ MonoBehaviour:
   NumberOfLaps: 0
   CurrentCircuitPosition: {x: 0, y: 0, z: 0}
   LookAtPoint: {x: 0, y: 0, z: 0}
+  IsReady: 0
   TotalDistance: 0
   CurrentLapCorrected: 0
   CurrentSegmentIdx: 24
@@ -229,6 +231,7 @@ MonoBehaviour:
   sceneId: 0
   serverOnly: 0
   m_AssetId: 
+  hasSpawned: 0
 --- !u!114 &9124325200002634512
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -299,6 +302,21 @@ MonoBehaviour:
   localRotationSensitivity: 0.01
   localScaleSensitivity: 0.01
   target: {fileID: 1170538449349667297}
+--- !u!114 &9157084183942963140
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1508097745644926054}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ef27d5237b2649f5986c8ab75acee224, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncMode: 0
+  syncInterval: 0.1
+  currentMatchDebug: 
 --- !u!1 &3266956378083433421
 GameObject:
   m_ObjectHideFlags: 0
