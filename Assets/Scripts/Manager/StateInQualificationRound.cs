@@ -30,11 +30,12 @@ namespace PolePosition.Manager
             {
                 player.NumberOfLaps = 1;
                 player.CurrentLap = 0;
-                player.CurrentPosition = 0;
+                player.CurrentPosition = 1;
                 player.TotalRaceTime = 0f;
                 player.CurrentLapTime = 0f;
                 player.BestLapTime = 0f;
                 player.AllLapsFinished = false;
+                player.CurrentSegmentIdx = _polePositionManager.m_CircuitController.CircuitNumberOfSegments - 1;
                 player.GetComponent<SetupPlayer>().RelocateCar(startPosition.position, startPosition.rotation);
                 player.GetComponent<PlayerMatchChecker>().matchId = Guid.NewGuid();
                 

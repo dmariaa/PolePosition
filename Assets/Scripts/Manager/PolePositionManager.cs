@@ -44,7 +44,7 @@ namespace PolePosition.Manager
         /// <summary>
         /// Debugging spheres
         /// </summary>
-        private GameObject[] m_DebuggingSpheres;
+        private readonly Dictionary<int, GameObject> _debuggingSpheres = new Dictionary<int, GameObject>();
 
         #region Callbacks
         private void Awake()
@@ -78,14 +78,6 @@ namespace PolePosition.Manager
             
             if(isServer)
             {
-                m_DebuggingSpheres = new GameObject[MaxNumPlayers];
-                for (int i = 0; i < MaxNumPlayers; ++i)
-                {
-                    m_DebuggingSpheres[i] = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                    m_DebuggingSpheres[i].GetComponent<SphereCollider>().enabled = false;
-                    m_DebuggingSpheres[i].transform.localScale = Vector3.one * 0.5f;
-                }
-
                 // Initialize state machine
                 _stateMachine = new StateMachine.StateMachine();
                 _stateMachine.ChangeState(new StateInLobby(this));
@@ -165,6 +157,10 @@ namespace PolePosition.Manager
                 player.RpcActivateHostLobbyButtons(false, player.ID);
             }
             _Players.Add(player.ID, player);
+            GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            sphere.transform.localScale = Vector3.one * 0.5f;
+            sphere.GetComponent<SphereCollider>().enabled = false;
+            _debuggingSpheres.Add(player.ID, sphere);
         }
 
         /// <summary>
@@ -190,8 +186,11 @@ namespace PolePosition.Manager
         [Server]
         public void DisablePlayersCollisions(bool ignore = true)
         {
-            int layer = _Players[0].gameObject.layer;
-            Physics.IgnoreLayerCollision(layer, layer, ignore);
+            if (_Players.Count > 0)
+            {
+                int layer = LayerMask.NameToLayer("Cars");
+                Physics.IgnoreLayerCollision(layer, layer, ignore);
+            }
         }
         
         /// <summary>
@@ -296,17 +295,17 @@ namespace PolePosition.Manager
             float minArcL =
                 this.m_CircuitController.ComputeClosestPointArcLength(carPos, out carDirection, out segIdx, out carProj, out carDist);
 
-            this.m_DebuggingSpheres[ID].transform.position = carProj;
+            this._debuggingSpheres[ID].transform.position = carProj;
             
             // Has the player crossed finish line?
             // Debug.LogFormat("Current: {0}, New: {1}", player.CurrentSegmentIdx, segIdx);
             if(player.CurrentSegmentIdx==m_CircuitController.CircuitNumberOfSegments - 1 && segIdx==0)
             {
-                // Debug.LogFormat("Cambio de vuelta hacia delante");
+                Debug.LogFormat("Cambio de vuelta hacia delante");
                 player.CrossedFinishLineForward();
             } else if (player.CurrentSegmentIdx == 0 && segIdx == m_CircuitController.CircuitNumberOfSegments - 1)
             {
-                // Debug.LogFormat("Cambio de vuelta hacia atras");
+                Debug.LogFormat("Cambio de vuelta hacia atras");
                 player.CrossedFinishLineBackwards();
             }
             

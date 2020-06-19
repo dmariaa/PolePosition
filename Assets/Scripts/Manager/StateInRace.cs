@@ -34,6 +34,7 @@ namespace PolePosition.Manager
                 player.CurrentLapTime = 0f;
                 player.BestLapTime = 0f;
                 player.AllLapsFinished = false;
+                player.CurrentSegmentIdx = _polePositionManager.m_CircuitController.CircuitNumberOfSegments - 1;
                 player.GetComponent<SetupPlayer>().StartCar();
                 player.GetComponent<SetupPlayer>().RelocateCar(startPosition.position, startPosition.rotation);
                 player.GetComponent<PlayerMatchChecker>().matchId = _polePositionManager.GlobalGUID;
