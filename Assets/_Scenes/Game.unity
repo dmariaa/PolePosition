@@ -2382,7 +2382,7 @@ PrefabInstance:
         type: 3}
       propertyPath: _polePositionManager
       value: 
-      objectReference: {fileID: 1839589612}
+      objectReference: {fileID: 1839589613}
     - target: {fileID: 2094761841012489080, guid: 5c339809502a33749b546f6663bcfb75,
         type: 3}
       propertyPath: m_AnchorMin.y

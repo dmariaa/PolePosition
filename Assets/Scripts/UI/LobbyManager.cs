@@ -1,3 +1,4 @@
+using PolePosition.Manager;
 using PolePosition.Player;
 using UnityEngine;
 using UnityEngine.UI;
@@ -9,9 +10,16 @@ namespace PolePosition.UI
     /// </summary>
     public class LobbyManager : MonoBehaviour
     {
+        /// <summary>
+        /// Current host that holds buttons
+        /// </summary>
         private int _currentHostId=-1;
 
+        /// <summary>
+        /// 
+        /// </summary>
         private int _localHostId = -1;
+        
         /// <summary>
         /// Prefab used in connection info elements
         /// </summary>
@@ -87,7 +95,8 @@ namespace PolePosition.UI
 
                     _numPlayersToDrive.OnUpdateNumberValidate = (int numDrivers) =>
                     {
-                        return numDrivers >= 1 && numDrivers <= 4;
+                        int currentPlayers = _playersPanel.GetComponentsInChildren<ConnectionInfoController>().Length;
+                        return numDrivers >= currentPlayers && numDrivers <= 4;
                     };
 
                     _numLaps.OnUpdateNumberInput = (int numLaps) =>
@@ -154,16 +163,8 @@ namespace PolePosition.UI
                     Destroy(connectionInfoController.gameObject);
                 }
             }
-            if (id == _currentHostId)
-            {
-                var connectionInfoController = _playersPanel.GetComponentInChildren<ConnectionInfoController>();
-                _currentHostId = connectionInfoController.CarID;
-                if (_localHostId == _currentHostId)
-                {
-                    _numPlayersToDrive.EnableNumberInputButtons(true);
-                }
-            }
         }
+        
         public void UpdateNumDrivers(int drivers)
         {
             _numPlayersToDrive.Value = drivers;

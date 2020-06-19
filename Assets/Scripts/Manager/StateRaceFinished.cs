@@ -26,7 +26,7 @@ namespace PolePosition.Manager
             {
                 _timer += Time.deltaTime;
                 
-                if (_timer >= 5)
+                if (_timer >= 15f)
                 {
                     _polePositionManager.StateChange(new StateInRace(_polePositionManager));
                 }

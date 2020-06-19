@@ -71,7 +71,7 @@ namespace PolePosition.Manager
                 
                 if (finishedPlayers == _numberOfPlayersInRace)
                 {
-                    _polePositionManager.UpdatePlayersPositions();
+                    _polePositionManager.UpdatePlayersPositions(true);
                     _polePositionManager.StateChange(new StateRaceFinished(_polePositionManager, true));
                 }
             }

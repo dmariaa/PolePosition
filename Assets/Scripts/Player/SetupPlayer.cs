@@ -39,11 +39,13 @@ namespace PolePosition.Player
         public override void OnStartClient()
         {
             base.OnStartClient();
-            m_UIManager.Lobby.AddPlayer(m_PlayerInfo);
-            m_UIManager.Lobby.UpdateNumDrivers(_polePositionManager.MaxNumPlayers);
-            m_UIManager.Lobby.UpdateNumLaps(_polePositionManager.NumberOfLaps);
-            m_UIManager.Lobby.UpdateQualificationLap(_polePositionManager.QualificationLap);
-            
+            if(m_UIManager.Lobby.isActiveAndEnabled)
+            {
+                m_UIManager.Lobby.AddPlayer(m_PlayerInfo);
+                m_UIManager.Lobby.UpdateNumDrivers(_polePositionManager.MaxNumPlayers);
+                m_UIManager.Lobby.UpdateNumLaps(_polePositionManager.NumberOfLaps);
+                m_UIManager.Lobby.UpdateQualificationLap(_polePositionManager.QualificationLap);
+            }
         }
 
         public override void OnStopClient()

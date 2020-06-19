@@ -16,8 +16,11 @@ namespace PolePosition.Manager
         private int _currentLobbyHostId = -1;
         [SyncVar(hook = nameof(OnChangeNumLaps))] public int NumberOfLaps = 4;
         [SyncVar(hook = nameof(OnChangeQualificationLap))] public bool QualificationLap = true;
+        
         public UIManager uiManager;
         public CircuitController m_CircuitController;
+        
+        private PolePositionNetworkManager _polePositionNetworkManager;
 
         private Guid _globalGuid;
         public Guid GlobalGUID
@@ -51,6 +54,8 @@ namespace PolePosition.Manager
         {
             if (uiManager == null) uiManager = FindObjectOfType<UIManager>();
             if (m_CircuitController == null) m_CircuitController = FindObjectOfType<CircuitController>();
+            _polePositionNetworkManager = FindObjectOfType<PolePositionNetworkManager>();
+            
             _globalGuid = Guid.NewGuid();
         }
 
@@ -173,10 +178,15 @@ namespace PolePosition.Manager
         {
             int id = player.ID;
             _Players.Remove(player.ID);
+            
             if (id == _currentLobbyHostId && _Players.Count > 0)
             {
-                _currentLobbyHostId= _Players.First().Value.ID;
+                _currentLobbyHostId = _Players.First().Value.ID;
                 _Players.First().Value.RpcActivateHostLobbyButtons(true, _currentLobbyHostId);
+            } 
+            else if(_Players.Count==0)
+            {
+                _currentLobbyHostId = -1;
             }
         }
 
@@ -241,14 +251,21 @@ namespace PolePosition.Manager
         }
 
         [Server]
-        public void UpdatePlayersPositions()
+        public void UpdatePlayersPositions(bool qualifying = false)
         {
             PlayerInfo[] players = _Players.Values.ToArray();
             Array.Sort(players, (one, other) =>
             {
                 if (one.AllLapsFinished && other.AllLapsFinished)
                 {
-                    return one.TotalRaceTime > other.TotalRaceTime ? 1 : -1;
+                    if (!qualifying)
+                    {
+                        return one.TotalRaceTime > other.TotalRaceTime ? 1 : -1;    
+                    }
+                    else
+                    {
+                        return one.CurrentLapTime > other.CurrentLapTime ? 1 : -1;
+                    }
                 }
 
                 if (one.AllLapsFinished && !other.AllLapsFinished)
@@ -412,6 +429,7 @@ namespace PolePosition.Manager
         void CmdUpdateNumPlayers(int numDrivers)
         {
             MaxNumPlayers = numDrivers;
+            _polePositionNetworkManager.maxConnections = numDrivers;
         }
 
         [Command(ignoreAuthority = true)]

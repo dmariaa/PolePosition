@@ -22,6 +22,7 @@ namespace PolePosition.Manager
 
         public override void Enter()
         {
+            _polePositionManager.DisablePlayersCollisions(false);
             _polePositionManager.RpcShowInGameHUD(false);
             _numberOfPlayersInRace = _polePositionManager.Players.Count;
             
