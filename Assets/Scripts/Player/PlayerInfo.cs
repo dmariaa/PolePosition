@@ -183,7 +183,18 @@ namespace PolePosition.Player
         #endregion
 
         #region Client RpcCalls and Commands
-
+        [ClientRpc]
+        public void RpcActivateHostLobbyButtons(bool activate, int id)
+        {
+            if (ID == id && isLocalPlayer)
+            {
+                _setupPlayer.ActivateHostLobbyButtons(activate);
+                /*_setupPlayer.m_UIManager.Lobby.OnUpdateNumDrivers = (int numDrivers) =>
+                {
+                    CmdUpdateNumPlayers(numDrivers);
+                };*/
+            }
+        }
         [ClientRpc]
         public void RpcConfigureCamera()
         {
@@ -211,7 +222,29 @@ namespace PolePosition.Player
         {
             _setupPlayer.StopPlayerController();
         }
-        
+
+
+        /// <summary>
+        /// Chat receive message
+        /// </summary>
+        /// <param name="message"></param>
+        [ClientRpc]
+        public void RpcReceive(string message)
+        {
+            OnMessage?.Invoke(this, message);
+        }
+
+        /// <summary>
+        /// Chat send message
+        /// </summary>
+        /// <param name="message"></param>
+        [Command]
+        public void CmdSend(string message)
+        {
+            if (message.Trim() != "")
+                RpcReceive(message.Trim());
+        }
+
         [Command]
         public void CmdSetName(string playerName)
         {
@@ -229,6 +262,13 @@ namespace PolePosition.Player
         {
             IsReady = ready;
         }
+
+        [Command]
+        void CmdUpdateNumPlayers(int numDrivers)
+        {
+            _setupPlayer._polePositionManager.MaxNumPlayers = numDrivers;
+        }
+
         #endregion
 
         #region Private props
@@ -269,6 +309,8 @@ namespace PolePosition.Player
         /// Used server only, not needed in client
         /// </summary>
         public bool AllLapsFinished = false;
+
+        public static event Action<PlayerInfo, string> OnMessage;
         #endregion
 
         #region Method Overrides

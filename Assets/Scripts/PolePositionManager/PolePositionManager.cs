@@ -13,8 +13,10 @@ namespace PolePositionManager
 {
     public class PolePositionManager : NetworkBehaviour
     {
-        public int MaxNumPlayers = 4;
-        public int NumberOfLaps = 4;
+        [SyncVar (hook = nameof (OnChangeMaxNumPlayers))]public int MaxNumPlayers;
+        private int _currentLobbyHostId = -1;
+        [SyncVar(hook = nameof(OnChangeNumLaps))] public int NumberOfLaps = 4;
+        [SyncVar(hook = nameof(OnChangeQualificationLap))] public bool QualificationLap = true;
         public UIManager uiManager;
         public CircuitController m_CircuitController;
 
@@ -44,6 +46,24 @@ namespace PolePositionManager
         {
             if (uiManager == null) uiManager = FindObjectOfType<UIManager>();
             if (m_CircuitController == null) m_CircuitController = FindObjectOfType<CircuitController>();
+        }
+
+        public override void OnStartClient()
+        {
+            base.OnStartClient();
+            uiManager.Lobby.OnUpdateNumDrivers = (int numDrivers) =>
+                {
+                    CmdUpdateNumPlayers(numDrivers);
+                };
+            uiManager.Lobby.OnUpdateNumLaps = (int numLaps) =>
+            {
+                CmdUpdateNumLaps(numLaps);
+            };
+            uiManager.Lobby.OnUpdateQualificationLap = (bool value) =>
+            {
+                CmdUpdateQualificationLap(value);
+            };
+
         }
 
         public override void OnStartServer()
@@ -126,6 +146,15 @@ namespace PolePositionManager
         [Server]
         public void AddPlayer(PlayerInfo player)
         {
+            if (_currentLobbyHostId == -1)
+            {
+                _currentLobbyHostId = player.ID;
+                player.RpcActivateHostLobbyButtons(true, _currentLobbyHostId);
+            }
+            else
+            {
+                player.RpcActivateHostLobbyButtons(false, player.ID);
+            }
             _Players.Add(player.ID, player);
         }
 
@@ -137,7 +166,13 @@ namespace PolePositionManager
         [Server]
         public void RemovePlayer(PlayerInfo player)
         {
+            int id = player.ID;
             _Players.Remove(player.ID);
+            if (id == _currentLobbyHostId && _Players.Count > 0)
+            {
+                _currentLobbyHostId= _Players.First().Value.ID;
+                _Players.First().Value.RpcActivateHostLobbyButtons(true, _currentLobbyHostId);
+            }
         }
 
         /// <summary>
@@ -312,5 +347,46 @@ namespace PolePositionManager
             uiManager.ActivateInGameHUD();
         }
         #endregion
+
+        #region Hooks
+        private void OnChangeMaxNumPlayers(int oldMaxNumPlayers, int newMaxNumPlayers)
+        {
+            uiManager.Lobby.UpdateNumDrivers(newMaxNumPlayers);
+        }
+
+        private void OnChangeNumLaps(int oldNumLaps, int newNumLaps)
+        {
+            uiManager.Lobby.UpdateNumLaps(newNumLaps);
+        }
+
+        private void OnChangeQualificationLap(bool oldValue, bool newValue)
+        {
+            uiManager.Lobby.UpdateQualificationLap(newValue);
+        }
+        
+
+        #endregion
+
+        [Command(ignoreAuthority = true)]
+        void CmdUpdateNumPlayers(int numDrivers)
+        {
+            MaxNumPlayers = numDrivers;
+        }
+
+        [Command(ignoreAuthority = true)]
+        void CmdUpdateNumLaps(int numLaps)
+        {
+            NumberOfLaps = numLaps;
+            foreach(var player in _Players.Values)
+            {
+                player.NumberOfLaps = numLaps;
+            }
+        }
+
+        [Command(ignoreAuthority = true)]
+        void CmdUpdateQualificationLap(bool value)
+        {
+            QualificationLap = value;
+        }
     }
 }

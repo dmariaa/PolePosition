@@ -5,15 +5,19 @@ namespace Mirror.Examples.Basic
 {
     public class Player : NetworkBehaviour
     {
-        [Header("Player Components")] public RectTransform rectTransform;
+        [Header("Player Components")]
+        public RectTransform rectTransform;
         public Image image;
 
-        [Header("Child Text Objects")] public Text playerNameText;
+        [Header("Child Text Objects")]
+        public Text playerNameText;
         public Text playerDataText;
 
         // These are set in OnStartServer and used in OnStartClient
-        [SyncVar] int playerNo;
-        [SyncVar] Color playerColor;
+        [SyncVar]
+        int playerNo;
+        [SyncVar]
+        Color playerColor;
 
         // This is updated by UpdateData which is called from OnStartServer via InvokeRepeating
         [SyncVar(hook = nameof(OnPlayerDataChanged))]
