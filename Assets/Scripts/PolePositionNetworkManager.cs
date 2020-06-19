@@ -69,28 +69,34 @@ namespace PolePosition
             {
                 connection.Disconnect();
             }
-
-            Transform startPos = GetStartPosition();
-            GameObject player = startPos != null
-                ? Instantiate(playerPrefab, startPos.position, startPos.rotation)
-                : Instantiate(playerPrefab);
+            else
+            {
+                Transform startPos = GetStartPosition();
+                GameObject player = startPos != null
+                    ? Instantiate(playerPrefab, startPos.position, startPos.rotation)
+                    : Instantiate(playerPrefab);
             
-            PlayerInfo playerInfo = player.GetComponent<PlayerInfo>();
-            playerInfo.ID = connection.connectionId;
-            playerInfo.Name = string.Format("Player {0}", connection.connectionId);
-            playerInfo.Color = ColorPicker.GetRandomColor();
-            playerInfo.CurrentPosition = startPositionIndex;
-            playerInfo.CurrentLap = 0;
-            playerInfo.NumberOfLaps = _polePositionManager.NumberOfLaps; 
+                PlayerInfo playerInfo = player.GetComponent<PlayerInfo>();
+                playerInfo.ID = connection.connectionId;
+                playerInfo.Name = string.Format("Player {0}", connection.connectionId);
+                playerInfo.Color = ColorPicker.GetRandomColor();
+                playerInfo.CurrentPosition = startPositionIndex;
+                playerInfo.CurrentLap = 0;
+                playerInfo.NumberOfLaps = _polePositionManager.NumberOfLaps; 
             
-            NetworkServer.AddPlayerForConnection(connection, player);
+                NetworkServer.AddPlayerForConnection(connection, player);
             
-            _polePositionManager.AddPlayer(playerInfo);
+                _polePositionManager.AddPlayer(playerInfo);
+            }
         }
 
         public override void OnServerDisconnect(NetworkConnection conn)
         {
-            _polePositionManager.RemovePlayer(conn.identity.GetComponent<PlayerInfo>());   
+            if(conn.identity != null)
+            {
+                _polePositionManager.RemovePlayer(conn.identity.GetComponent<PlayerInfo>());
+            }   
+            
             base.OnServerDisconnect(conn);
         }
     }
