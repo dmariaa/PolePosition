@@ -12,8 +12,10 @@ namespace PolePosition.Manager
 {
     public class PolePositionManager : NetworkBehaviour
     {
-        public int MaxNumPlayers = 4;
-        public int NumberOfLaps = 4;
+        [SyncVar (hook = nameof (OnChangeMaxNumPlayers))]public int MaxNumPlayers;
+        private int _currentLobbyHostId = -1;
+        [SyncVar(hook = nameof(OnChangeNumLaps))] public int NumberOfLaps = 4;
+        [SyncVar(hook = nameof(OnChangeQualificationLap))] public bool QualificationLap = true;
         public UIManager uiManager;
         public CircuitController m_CircuitController;
 
@@ -50,6 +52,24 @@ namespace PolePosition.Manager
             if (uiManager == null) uiManager = FindObjectOfType<UIManager>();
             if (m_CircuitController == null) m_CircuitController = FindObjectOfType<CircuitController>();
             _globalGuid = Guid.NewGuid();
+        }
+
+        public override void OnStartClient()
+        {
+            base.OnStartClient();
+            uiManager.Lobby.OnUpdateNumDrivers = (int numDrivers) =>
+                {
+                    CmdUpdateNumPlayers(numDrivers);
+                };
+            uiManager.Lobby.OnUpdateNumLaps = (int numLaps) =>
+            {
+                CmdUpdateNumLaps(numLaps);
+            };
+            uiManager.Lobby.OnUpdateQualificationLap = (bool value) =>
+            {
+                CmdUpdateQualificationLap(value);
+            };
+
         }
 
         public override void OnStartServer()
@@ -135,6 +155,15 @@ namespace PolePosition.Manager
         public void AddPlayer(PlayerInfo player)
         {
             player.GetComponent<PlayerMatchChecker>().matchId = _globalGuid;
+            if (_currentLobbyHostId == -1)
+            {
+                _currentLobbyHostId = player.ID;
+                player.RpcActivateHostLobbyButtons(true, _currentLobbyHostId);
+            }
+            else
+            {
+                player.RpcActivateHostLobbyButtons(false, player.ID);
+            }
             _Players.Add(player.ID, player);
         }
 
@@ -146,7 +175,13 @@ namespace PolePosition.Manager
         [Server]
         public void RemovePlayer(PlayerInfo player)
         {
+            int id = player.ID;
             _Players.Remove(player.ID);
+            if (id == _currentLobbyHostId && _Players.Count > 0)
+            {
+                _currentLobbyHostId= _Players.First().Value.ID;
+                _Players.First().Value.RpcActivateHostLobbyButtons(true, _currentLobbyHostId);
+            }
         }
 
         /// <summary>
@@ -264,14 +299,14 @@ namespace PolePosition.Manager
             this.m_DebuggingSpheres[ID].transform.position = carProj;
             
             // Has the player crossed finish line?
-            Debug.LogFormat("Current: {0}, New: {1}", player.CurrentSegmentIdx, segIdx);
+            // Debug.LogFormat("Current: {0}, New: {1}", player.CurrentSegmentIdx, segIdx);
             if(player.CurrentSegmentIdx==m_CircuitController.CircuitNumberOfSegments - 1 && segIdx==0)
             {
-                Debug.LogFormat("Cambio de vuelta hacia delante");
+                // Debug.LogFormat("Cambio de vuelta hacia delante");
                 player.CrossedFinishLineForward();
             } else if (player.CurrentSegmentIdx == 0 && segIdx == m_CircuitController.CircuitNumberOfSegments - 1)
             {
-                Debug.LogFormat("Cambio de vuelta hacia atras");
+                // Debug.LogFormat("Cambio de vuelta hacia atras");
                 player.CrossedFinishLineBackwards();
             }
             
@@ -354,5 +389,46 @@ namespace PolePosition.Manager
             uiManager.ShowPanelPositions(!qualifying);
         }
         #endregion
+
+        #region Hooks
+        private void OnChangeMaxNumPlayers(int oldMaxNumPlayers, int newMaxNumPlayers)
+        {
+            uiManager.Lobby.UpdateNumDrivers(newMaxNumPlayers);
+        }
+
+        private void OnChangeNumLaps(int oldNumLaps, int newNumLaps)
+        {
+            uiManager.Lobby.UpdateNumLaps(newNumLaps);
+        }
+
+        private void OnChangeQualificationLap(bool oldValue, bool newValue)
+        {
+            uiManager.Lobby.UpdateQualificationLap(newValue);
+        }
+        
+
+        #endregion
+
+        [Command(ignoreAuthority = true)]
+        void CmdUpdateNumPlayers(int numDrivers)
+        {
+            MaxNumPlayers = numDrivers;
+        }
+
+        [Command(ignoreAuthority = true)]
+        void CmdUpdateNumLaps(int numLaps)
+        {
+            NumberOfLaps = numLaps;
+            foreach(var player in _Players.Values)
+            {
+                player.NumberOfLaps = numLaps;
+            }
+        }
+
+        [Command(ignoreAuthority = true)]
+        void CmdUpdateQualificationLap(bool value)
+        {
+            QualificationLap = value;
+        }
     }
 }

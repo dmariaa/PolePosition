@@ -1,5 +1,5 @@
 ﻿using Mirror;
-using System.Threading;
+using PolePosition.Manager;
 using PolePosition.UI;
 using UnityEngine;
 
@@ -12,18 +12,20 @@ namespace PolePosition.Player
 {
     public class SetupPlayer : NetworkBehaviour
     {
-        private UIManager m_UIManager;
+        public UIManager m_UIManager;
         private PlayerController m_PlayerController;
         private PlayerInfo m_PlayerInfo;
         private Material m_BodyMaterial;
 
         private PlayerInputController _playerInputController;
+        public PolePositionManager _polePositionManager;
 
         private void Awake()
         {
             m_PlayerInfo = GetComponent<PlayerInfo>();
             m_PlayerController = GetComponent<PlayerController>();
             m_UIManager = FindObjectOfType<UIManager>();
+            _polePositionManager = FindObjectOfType<PolePositionManager>();
 
             // Controller for player input
             _playerInputController = GetComponent<PlayerInputController>();
@@ -31,12 +33,17 @@ namespace PolePosition.Player
             // Gets the body material to update color
             Transform carBody = transform.Find("raceCar").Find("body");
             m_BodyMaterial = carBody.GetComponent<Renderer>().materials[1];
+
         }
 
         public override void OnStartClient()
         {
             base.OnStartClient();
             m_UIManager.Lobby.AddPlayer(m_PlayerInfo);
+            m_UIManager.Lobby.UpdateNumDrivers(_polePositionManager.MaxNumPlayers);
+            m_UIManager.Lobby.UpdateNumLaps(_polePositionManager.NumberOfLaps);
+            m_UIManager.Lobby.UpdateQualificationLap(_polePositionManager.QualificationLap);
+            
         }
 
         public override void OnStopClient()
@@ -207,6 +214,12 @@ namespace PolePosition.Player
             {
                 _playerInputController.enabled = false;
             }
+        }
+
+        [Client]
+        public void ActivateHostLobbyButtons(bool activate)
+        {
+            m_UIManager.Lobby.ActivateButtons(activate);
         }
         
         /// <summary>

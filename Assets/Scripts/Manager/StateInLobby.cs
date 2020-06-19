@@ -13,20 +13,19 @@ namespace PolePosition.Manager
 
         public StateInLobby(PolePositionManager polePositionManager) : base(polePositionManager, "InLobby")
         {
-            _numberOfPlayers = polePositionManager.MaxNumPlayers;
-            _players = polePositionManager.Players;
+            
         }
         
         public override void Enter()
         {
-            // Nothing to do here
+            
         }
         
         public override void Update()
         {
             int numberOfReadyPlayers = 0;
             
-            foreach (var player in _players)
+            foreach (var player in _polePositionManager.Players)
             {
                 if (player.Value.IsReady)
                 {
@@ -34,10 +33,16 @@ namespace PolePosition.Manager
                 }    
             }
 
-            if (numberOfReadyPlayers == _numberOfPlayers)
+            if (numberOfReadyPlayers == _polePositionManager.MaxNumPlayers)
             {
-                //_polePositionManager.StateChange(new StateInQualificationRound(_polePositionManager));
-                _polePositionManager.StateChange(new StateInRace(_polePositionManager));
+                if (_polePositionManager.QualificationLap)
+                {
+                    _polePositionManager.StateChange(new StateInQualificationRound(_polePositionManager));  
+                }
+                else
+                {
+                    _polePositionManager.StateChange(new StateInRace(_polePositionManager));
+                }
             }
         }
 

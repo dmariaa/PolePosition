@@ -57,10 +57,10 @@ namespace PolePosition
             NetworkClient.Send(message);
         }
 
-        public override void OnClientDisconnect(NetworkConnection conn)
+        public override void OnServerDisconnect(NetworkConnection conn)
         {
             _polePositionManager.RemovePlayer(conn.identity.GetComponent<PlayerInfo>());   
-            base.OnClientDisconnect(conn);
+            base.OnServerDisconnect(conn);
         }
     }
 }

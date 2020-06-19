@@ -1,6 +1,5 @@
 ﻿using System;
 using Mirror;
-using PolePosition;
 using PolePosition.Player;
 using UnityEngine;
 using UnityEngine.UI;

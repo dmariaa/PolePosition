@@ -1,5 +1,6 @@
 using PolePosition.Player;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace PolePosition.UI
 {
@@ -8,6 +9,9 @@ namespace PolePosition.UI
     /// </summary>
     public class LobbyManager : MonoBehaviour
     {
+        private int _currentHostId=-1;
+
+        private int _localHostId = -1;
         /// <summary>
         /// Prefab used in connection info elements
         /// </summary>
@@ -22,11 +26,41 @@ namespace PolePosition.UI
         /// Player settings UI 
         /// </summary>
         private PlayerSettingsManager _playerSettings;
-        
+
+        /// <summary>
+        /// Num drivers in the race
+        /// </summary>
+        private NumberInputController _numPlayersToDrive;
+
+        private NumberInputController _numLaps;
+
+        private Toggle _qualificationLapController;
+
+        /// <summary>
+        /// Delegate called when numDrivers is updated
+        /// </summary> 
+        public delegate void OnUpdateNumDriversDelegate(int numDrivers);
+        public OnUpdateNumDriversDelegate OnUpdateNumDrivers;
+
+        /// <summary>
+        /// Delegate called when numLaps is updated
+        /// </summary> 
+        public delegate void OnUpdateNumLapsDelegate(int numLaps);
+        public OnUpdateNumDriversDelegate OnUpdateNumLaps;
+
+        /// <summary>
+        /// Delegate called when qualificationRoundCheckBox is updated
+        /// </summary> 
+        public delegate void OnUpdateQualificationLapDelegate(bool value);
+        public OnUpdateQualificationLapDelegate OnUpdateQualificationLap;
+
         private void Awake()
         {
             _playersPanel = transform.Find("PlayersPanel");
             _playerSettings = transform.Find("PlayerSettings").GetComponent<PlayerSettingsManager>();
+            _numPlayersToDrive = transform.Find("NumPlayersToDrive").GetComponent<NumberInputController>();
+            _numLaps = transform.Find("NumLaps").GetComponent<NumberInputController>();
+            _qualificationLapController = transform.Find("QualificationRound").GetComponent<Toggle>();
         }
 
         /// <summary>
@@ -46,8 +80,34 @@ namespace PolePosition.UI
                 
                 if (playerInfo.isLocalPlayer)
                 {
+                    _numPlayersToDrive.OnUpdateNumberInput = (int numDrivers) =>
+                    {
+                        OnUpdateNumDrivers?.Invoke(numDrivers);
+                    };
+
+                    _numPlayersToDrive.OnUpdateNumberValidate = (int numDrivers) =>
+                    {
+                        return numDrivers >= 1 && numDrivers <= 4;
+                    };
+
+                    _numLaps.OnUpdateNumberInput = (int numLaps) =>
+                    {
+                        OnUpdateNumLaps?.Invoke(numLaps);
+                    };
+
+                    _numLaps.OnUpdateNumberValidate = (int numLaps) =>
+                    {
+                        return numLaps >= 1 && numLaps <= 9;
+                    };
+
+                    _qualificationLapController.onValueChanged.AddListener((bool value) =>
+                    {
+                        OnUpdateQualificationLap?.Invoke(value);
+                    });
+
+
                     controller.EnableReadyButton(true);
-                    
+
                     controller.OnPlayerNameClicked = () =>
                     {
                         _playerSettings.gameObject.SetActive(true);
@@ -79,12 +139,14 @@ namespace PolePosition.UI
                     playerInfo.OnChangeColorEvent += color => controller.CarColor = color;
                     playerInfo.OnChangeNameEvent += playerName => controller.PlayerName = playerName;
                     playerInfo.OnChangeIsReadyEvent += ready => controller.IsReady = ready;
+                    
                 }
             }
         }
 
         public void RemovePlayer(PlayerInfo playerInfo)
         {
+            int id = playerInfo.ID;
             foreach (var connectionInfoController in _playersPanel.GetComponentsInChildren<ConnectionInfoController>())
             {
                 if (connectionInfoController.CarID == playerInfo.ID)
@@ -92,6 +154,37 @@ namespace PolePosition.UI
                     Destroy(connectionInfoController.gameObject);
                 }
             }
+            if (id == _currentHostId)
+            {
+                var connectionInfoController = _playersPanel.GetComponentInChildren<ConnectionInfoController>();
+                _currentHostId = connectionInfoController.CarID;
+                if (_localHostId == _currentHostId)
+                {
+                    _numPlayersToDrive.EnableNumberInputButtons(true);
+                }
+            }
+        }
+        public void UpdateNumDrivers(int drivers)
+        {
+            _numPlayersToDrive.Value = drivers;
+        }
+
+        public void UpdateNumLaps(int laps)
+        {
+            _numLaps.Value = laps;
+        }
+
+        public void UpdateQualificationLap(bool value)
+        {
+            _qualificationLapController.isOn = value;
+        }
+
+        public void ActivateButtons(bool activate)
+        {
+            _numPlayersToDrive.EnableNumberInputButtons(activate);
+            _numLaps.EnableNumberInputButtons(activate);
+            _qualificationLapController.interactable = activate;
+
         }
     }
 }
