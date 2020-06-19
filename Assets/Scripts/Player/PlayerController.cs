@@ -68,16 +68,21 @@ namespace PolePosition.Player
         // Componentes
         private PlayerInfo m_PlayerInfo;
         private Rigidbody m_Rigidbody;
+        private SetupPlayer _setupPlayer;
 
         private float m_SteerHelper = 0.8f;
         private float _currentLapTime = 0f;
         private bool _countingTime;
+        
+        [SerializeField] private float _maxWrongDirectionTime = 3.0f;
+        private float _wrongDirectionTimer = 0.0f;
         #endregion Variables
 
         #region Unity Callbacks
 
         public void Awake()
         {
+            _setupPlayer = GetComponent<SetupPlayer>();
             m_Rigidbody = GetComponent<Rigidbody>();
             m_PlayerInfo = GetComponent<PlayerInfo>();
             EngineStarted = true;
@@ -111,7 +116,6 @@ namespace PolePosition.Player
             {
                 _currentLapTime += Time.deltaTime;
                 m_PlayerInfo.CurrentLapTime = _currentLapTime;
-                m_PlayerInfo.TotalRaceTime += Time.deltaTime;
             }
         }
         
@@ -124,7 +128,7 @@ namespace PolePosition.Player
             {
                 InputAcceleration = 0f;
                 InputSteering = 0f;
-                InputBrake = 999999999f;
+                InputBrake = float.PositiveInfinity;
             }
 
             foreach (AxleInfo axleInfo in axleInfos)
@@ -161,12 +165,45 @@ namespace PolePosition.Player
                     {
                         axleInfo.leftWheel.brakeTorque = footBrake;
                         axleInfo.rightWheel.brakeTorque = footBrake;
+                    }
+                }
 
-                        if(UpsideDown && Stopped)      
+                if (!m_PlayerInfo.AllLapsFinished)
+                {
+                    // Is the car going in wrong direction?
+                    if (!Stopped && m_PlayerInfo.Direction < 0)
+                    {
+                        _wrongDirectionTimer += Time.deltaTime;
+                        if (_wrongDirectionTimer >= 0.5f)
                         {
-                            RelocateCar();
+                            _setupPlayer.RpcUpdateHUDMessage2("Wrong Direction", 100);
+                        }
+                    
+                        if (_wrongDirectionTimer >= _maxWrongDirectionTime)
+                        {
+                            _wrongDirectionTimer = 0.0f;
+                            RelocateCarInTrack();
+                            _setupPlayer.RpcUpdateHUDMessage1("");
                         }
                     }
+                    else if (!Stopped && m_PlayerInfo.Direction > 0 && _wrongDirectionTimer > 0.0f)
+                    {
+                        _wrongDirectionTimer = 0.0f;
+                        _setupPlayer.RpcUpdateHUDMessage1("");
+                    }
+                
+                    // Is the car upside-down and stuck?
+                    if(UpsideDown && Stopped)      
+                    {
+                        if (InputBrake < 1.0f)
+                        {
+                            _setupPlayer.RpcUpdateHUDMessage2("Crashed!\nPress brake to continue", 70);                                          
+                        }
+                        else
+                        {
+                            RelocateCarInTrack();    
+                        }
+                    }   
                 }
 
                 ApplyLocalPositionToVisuals(axleInfo.leftWheel);
@@ -208,13 +245,19 @@ namespace PolePosition.Player
         /// Server only 
         /// </summary>
         [Server]
-        private void RelocateCar()
+        private void RelocateCarInTrack()
         {
-            Vector3 pos = new Vector3(m_PlayerInfo.CurrentCircuitPosition.x, 0.51f, m_PlayerInfo.CurrentCircuitPosition.z);
-            Vector3 rot = m_PlayerInfo.LookAtPoint;
+            Vector3 position = new Vector3(m_PlayerInfo.CurrentCircuitPosition.x, 0.51f, m_PlayerInfo.CurrentCircuitPosition.z);
+            Quaternion rotation = Quaternion.LookRotation((m_PlayerInfo.LookAtPoint - m_PlayerInfo.CurrentCircuitPosition), Vector3.up);
+            RelocateCar(position, rotation);
+        }
+
+        [Server]
+        public void RelocateCar(Vector3 position, Quaternion rotation)
+        {
             disableRigidBody();
-            transform.position = pos;
-            transform.LookAt(new Vector3(rot.x, transform.position.y, rot.z));
+            transform.position = position;
+            transform.rotation = rotation;
             enableRigidBody();
         }
 

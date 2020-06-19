@@ -205,8 +205,6 @@ namespace PolePosition.UI
         private void Start()
         {
             CreateColorPalette();
-            _selectedColor = Colors[0];
-        
         }
 
         void CreateColorPalette()

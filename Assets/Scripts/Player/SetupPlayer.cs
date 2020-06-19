@@ -39,12 +39,12 @@ namespace PolePosition.Player
             m_UIManager.Lobby.AddPlayer(m_PlayerInfo);
         }
 
-        public override void OnNetworkDestroy()
+        public override void OnStopClient()
         {
             m_UIManager.Lobby.RemovePlayer(m_PlayerInfo);
-            base.OnNetworkDestroy();
+            base.OnStopClient();
         }
-
+        
         // Start is called before the first frame update
         void Start()
         {
@@ -77,6 +77,33 @@ namespace PolePosition.Player
             {
                 Camera.main.gameObject.GetComponent<CameraController>().m_Focus = this.gameObject;
             }
+        }
+        
+        [Client]
+        public void UpdateHUDMessage(string message, int size = 30, Color? color = null)
+        {
+            if(isLocalPlayer)
+            {
+                m_UIManager.UpdateUIMessage(message, size, color);
+            }
+        }
+
+        [ClientRpc]
+        public void RpcUpdateHUDMessage3(string message, int size, Color color)
+        {
+            UpdateHUDMessage(message, size, color);
+        }
+
+        [ClientRpc]
+        public void RpcUpdateHUDMessage2(string message, int size)
+        {
+            UpdateHUDMessage(message, size);
+        }
+
+        [ClientRpc]
+        public void RpcUpdateHUDMessage1(string message)
+        {
+            UpdateHUDMessage(message);
         }
 
         /// <summary>
@@ -210,6 +237,18 @@ namespace PolePosition.Player
         public void StopCar()
         {
             m_PlayerController.EngineStarted = false;
+        }
+
+        [Server]
+        public void StartCar()
+        {
+            m_PlayerController.EngineStarted = true;
+        }
+        
+        [Server]
+        public void RelocateCar(Vector3 position, Quaternion rotation)
+        {
+            m_PlayerController.RelocateCar(position, rotation);
         }
     }
 }
