@@ -1,3 +1,4 @@
+using PolePosition.Manager;
 using Mirror;
 using PolePosition.Player;
 using PolePosition.UI;
@@ -7,11 +8,11 @@ namespace PolePosition
 {
     public class PolePositionNetworkManager : NetworkManager
     {
-        public PolePositionManager.PolePositionManager _polePositionManager;
+        public PolePositionManager _polePositionManager;
 
         public override void Awake()
         {
-            if(_polePositionManager==null) _polePositionManager = FindObjectOfType<PolePositionManager.PolePositionManager>();
+            if(_polePositionManager==null) _polePositionManager = FindObjectOfType<PolePositionManager>();
         }
 
         public override void OnStartServer()
@@ -46,9 +47,11 @@ namespace PolePosition
         public override void OnClientConnect(NetworkConnection conn)
         {
             base.OnClientConnect(conn);
+            int id = conn.connectionId;
+            
             CreatePlayerMessage message = new CreatePlayerMessage()
             {
-                Name = string.Format("Player {0}", conn.connectionId),
+                Name = string.Format("Player {0}", id),
                 Color = ColorPicker.GetRandomColor()
             };
             NetworkClient.Send(message);

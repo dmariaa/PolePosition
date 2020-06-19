@@ -75,7 +75,7 @@ namespace PolePosition
                 float dotProd = Vector3.Dot(carVec, pathVec);
 
                 // Corrección para ajustar cuando está justo entre dos puntos
-                if (dotProd < -0.5f)
+                if (dotProd < -1f)
                     continue;
 
                 if (dotProd > segLength)
