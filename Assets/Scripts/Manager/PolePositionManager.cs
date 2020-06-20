@@ -15,6 +15,8 @@ namespace PolePosition.Manager
         [SyncVar (hook = nameof (OnChangeMaxNumPlayers))]public int MaxNumPlayers;
         [SyncVar(hook = nameof(OnChangeNumLaps))] public int NumberOfLaps = 4;
         [SyncVar(hook = nameof(OnChangeQualificationLap))] public bool QualificationLap = true;
+        
+        [SyncVar] private int _minNumPlayers = 1;
 
         public UIManager uiManager;
         public CircuitController m_CircuitController;
@@ -86,6 +88,8 @@ namespace PolePosition.Manager
             {
                 CmdUpdateQualificationLap(value);
             };
+            
+            uiManager.Lobby.MinimumNumberOfPlayers = _minNumPlayers;
         }
 
         public override void OnStartServer()
@@ -97,6 +101,8 @@ namespace PolePosition.Manager
                 // Initialize state machine
                 _stateMachine = new StateMachine.StateMachine();
                 _stateMachine.ChangeState(new StateInLobby(this));
+                _minNumPlayers = TestMode ? 1 : 2;
+                if (MaxNumPlayers < _minNumPlayers) MaxNumPlayers = _minNumPlayers;
             }
         }
         
@@ -121,6 +127,16 @@ namespace PolePosition.Manager
         #endregion
 
         #region Server side methods
+
+        [Server]
+        public void StopAllCars()
+        {
+            foreach (var player in _Players.Values)
+            {
+                player.StopCar();
+            }
+        }
+        
         /// <summary>
         /// Starts the race
         /// Server side only
@@ -148,7 +164,7 @@ namespace PolePosition.Manager
             foreach (var playerInfo in playerInfos)
             {
                 RpcAddPlayerResult(playerInfo.CurrentPosition, playerInfo.Color, playerInfo.Name, 
-                    playerInfo.TotalRaceTime, playerInfo.BestLapTime);   
+                    playerInfo.TotalRaceTime, playerInfo.BestLapTime);
             }
 
             RpcShowResults();

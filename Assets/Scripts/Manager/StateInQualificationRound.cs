@@ -1,7 +1,6 @@
 using System;
 using Mirror;
 using PolePosition.Player;
-using PolePosition.UI;
 using UnityEngine;
 
 namespace PolePosition.Manager
@@ -71,10 +70,18 @@ namespace PolePosition.Manager
                 _polePositionManager.UpdateRaceProgress(0f, out finishedPlayers);
                 
                 if (finishedPlayers == _numberOfPlayersInRace || 
-                    (_polePositionManager.TestMode && _numberOfPlayersInRace==1))
+                    (!_polePositionManager.TestMode && _numberOfPlayersInRace==1))
                 {
                     _polePositionManager.UpdatePlayersPositions(true);
-                    _polePositionManager.StateChange(new StateRaceFinished(_polePositionManager, true));
+                    if (_numberOfPlayersInRace > 1)
+                    {
+                        _polePositionManager.StateChange(new StateRaceFinished(_polePositionManager, true));    
+                    }
+                    else
+                    {
+                        _polePositionManager.StopAllCars();
+                        _polePositionManager.StateChange(new StateRaceFinished(_polePositionManager, false));
+                    }
                 }
             }
         }

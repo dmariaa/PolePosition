@@ -23,25 +23,28 @@ namespace PolePosition.Manager
         
         public override void Update()
         {
-            int numberOfReadyPlayers = 0;
+            if (_polePositionManager.MaxNumPlayers == _polePositionManager.Players.Count)
+            {
+                int numberOfReadyPlayers = 0;
             
-            foreach (var player in _polePositionManager.Players)
-            {
-                if (player.Value.IsReady)
+                foreach (var player in _polePositionManager.Players)
                 {
-                    numberOfReadyPlayers++;
-                }    
-            }
-
-            if (numberOfReadyPlayers == _polePositionManager.MaxNumPlayers)
-            {
-                if (_polePositionManager.QualificationLap)
-                {
-                    _polePositionManager.StateChange(new StateInQualificationRound(_polePositionManager));  
+                    if (player.Value.IsReady)
+                    {
+                        numberOfReadyPlayers++;
+                    }    
                 }
-                else
+
+                if (numberOfReadyPlayers >= _polePositionManager.MaxNumPlayers * 0.5)
                 {
-                    _polePositionManager.StateChange(new StateInRace(_polePositionManager));
+                    if (_polePositionManager.QualificationLap)
+                    {
+                        _polePositionManager.StateChange(new StateInQualificationRound(_polePositionManager));  
+                    }
+                    else
+                    {
+                        _polePositionManager.StateChange(new StateInRace(_polePositionManager));
+                    }
                 }
             }
         }

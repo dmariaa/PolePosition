@@ -43,7 +43,9 @@ namespace PolePosition.UI
         private NumberInputController _numLaps;
 
         private Toggle _qualificationLapController;
-
+        
+        public int MinimumNumberOfPlayers { get; set; }
+        
         /// <summary>
         /// Delegate called when numDrivers is updated
         /// </summary> 
@@ -96,7 +98,7 @@ namespace PolePosition.UI
                     _numPlayersToDrive.OnUpdateNumberValidate = (int numDrivers) =>
                     {
                         int currentPlayers = _playersPanel.GetComponentsInChildren<ConnectionInfoController>().Length;
-                        return numDrivers >= currentPlayers && numDrivers <= 4;
+                        return numDrivers >= MinimumNumberOfPlayers && numDrivers >= currentPlayers && numDrivers <= 4;
                     };
 
                     _numLaps.OnUpdateNumberInput = (int numLaps) =>

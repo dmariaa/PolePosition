@@ -366,15 +366,24 @@ namespace PolePosition.Player
                 }
                 else
                 {
-                    AllLapsFinished = true;
-                    RpcStopPlayer();
-                    _setupPlayer.StopLapTime();
-                    _setupPlayer.StopCar();
+                    StopCar();
                 }
             }
 
             CurrentLapCorrected += 1;
             _crossedFinishLineBack = false;
+        }
+
+        /// <summary>
+        /// Finishes race for this car
+        /// </summary>
+        [Server]
+        public void StopCar()
+        {
+            AllLapsFinished = true;
+            RpcStopPlayer();
+            _setupPlayer.StopLapTime();
+            _setupPlayer.StopCar();
         }
 
         /// <summary>

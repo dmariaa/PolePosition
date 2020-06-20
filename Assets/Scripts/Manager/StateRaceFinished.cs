@@ -1,3 +1,4 @@
+using Mirror;
 using UnityEngine;
 
 namespace PolePosition.Manager
@@ -22,13 +23,18 @@ namespace PolePosition.Manager
 
         public override void Update()
         {
-            if(_qualifying)
-            {
-                _timer += Time.deltaTime;
+            _timer += Time.deltaTime;
                 
-                if (_timer >= 15f)
+            if (_timer >= 15f)
+            {
+                if(_qualifying)
                 {
                     _polePositionManager.StateChange(new StateInRace(_polePositionManager));
+                }
+                else
+                {
+                    NetworkServer.DisconnectAll();
+                    _polePositionManager.StateChange(new StateInLobby(_polePositionManager));
                 }
             }
         }
