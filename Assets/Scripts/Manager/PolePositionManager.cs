@@ -23,6 +23,11 @@ namespace PolePosition.Manager
         private PolePositionNetworkManager _polePositionNetworkManager;
 
         /// <summary>
+        /// Is the race started?
+        /// </summary>
+        public bool InRace { get; set; }
+
+        /// <summary>
         /// If test mode is active, races can be completed with only
         /// one car. For debugging purposes.
         /// </summary>

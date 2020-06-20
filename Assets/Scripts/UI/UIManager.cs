@@ -1,6 +1,7 @@
 ﻿using System;
 using Mirror;
 using PolePosition.Player;
+using UI;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -25,8 +26,7 @@ namespace PolePosition.UI
         [SerializeField] private Text textCurrentLap;
         [SerializeField] private Text textCurrentLapTime;
         [SerializeField] private Text textCountDown;
-        [SerializeField] private RectTransform panelPositions;
-        [SerializeField] private PlayerInfoPanelController[] playerPositions;
+        [SerializeField] private PlayersPositionsController panelPositions;
 
         [Header("Player Results")] [SerializeField]
         private GameObject _playerResults;
@@ -130,20 +130,16 @@ namespace PolePosition.UI
             textSpeed.text = "Speed " + speed + " Km/h";
         }
         
-        public void UpdatePlayersPositions(PlayerInfo playerInfo)
+        public void UpdatePlayerPosition(PlayerInfo playerInfo)
         {
-            int position = playerInfo.CurrentPosition - 1;
-            if(position >= 0 && position < playerPositions.Length)
-            {
-                PlayerInfoPanelController playerInfoPanelController = playerPositions[position];
-                playerInfoPanelController.UpdateData(playerInfo.CurrentPosition, 
-                    playerInfo.Color,
-                    playerInfo.Name,
-                    0f,
-                    playerInfo.TotalRaceTime);
-            }
+            panelPositions.UpdatePlayerInfo(playerInfo);
         }
-        
+
+        public void RemovePlayerPosition(PlayerInfo playerInfo)
+        {
+            panelPositions.RemovePlayerInfo(playerInfo);
+        }
+
         public void UpdateUIMessage(string message, int fontSize = 30, Color? color = null)
         {
             textCountDown.color = color ?? Color.red;

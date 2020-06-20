@@ -77,6 +77,7 @@ namespace PolePosition.Manager
                 if (finishedPlayers == _numberOfPlayersInRace || 
                     (!_polePositionManager.TestMode && _numberOfPlayersInRace==1))
                 {
+                    _polePositionManager.StopAllCars();
                     _polePositionManager.StateChange(new StateRaceFinished(_polePositionManager, false));
                 }
                 else

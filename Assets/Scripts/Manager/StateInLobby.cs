@@ -51,6 +51,7 @@ namespace PolePosition.Manager
 
         public override void Exit()
         {
+            _polePositionManager.InRace = true;
         }
     }
 }

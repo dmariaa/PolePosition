@@ -26,7 +26,8 @@ namespace PolePosition
 
         public override void OnServerAddPlayer(NetworkConnection connection)
         {
-            if (_polePositionManager.MaxNumPlayers == _polePositionManager.Players.Count)
+            if (_polePositionManager.MaxNumPlayers == _polePositionManager.Players.Count ||
+                _polePositionManager.InRace)
             {
                 connection.Disconnect();
             }

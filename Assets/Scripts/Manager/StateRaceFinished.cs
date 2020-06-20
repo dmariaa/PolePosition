@@ -33,7 +33,6 @@ namespace PolePosition.Manager
                 }
                 else
                 {
-                    NetworkServer.DisconnectAll();
                     _polePositionManager.StateChange(new StateInLobby(_polePositionManager));
                 }
             }

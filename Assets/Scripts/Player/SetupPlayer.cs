@@ -51,6 +51,7 @@ namespace PolePosition.Player
         public override void OnStopClient()
         {
             m_UIManager.Lobby.RemovePlayer(m_PlayerInfo);
+            m_UIManager.RemovePlayerPosition(m_PlayerInfo);
             base.OnStopClient();
         }
         
@@ -122,7 +123,7 @@ namespace PolePosition.Player
         [Client]
         public void UpdatePosition()
         {
-            m_UIManager.UpdatePlayersPositions(m_PlayerInfo);
+            m_UIManager.UpdatePlayerPosition(m_PlayerInfo);
         }
 
         /// <summary>
