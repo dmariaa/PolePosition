@@ -20,18 +20,32 @@ namespace Assets.Scripts.UI
         public void Awake()
         {
             PlayerInfo.OnMessage += OnPlayerMessage;
+            chatMessage.onEndEdit.AddListener((t) =>
+            {
+                if (Input.GetKeyDown(KeyCode.Return))
+                {
+                    OnSend();
+                    chatMessage.ActivateInputField();
+                }
+            });
+        }
+
+        private void Update()
+        {
+            // if (chatMessage.isFocused && !string.IsNullOrEmpty(chatMessage.text) &&
+            //     Input.GetKey(KeyCode.Return))
+            // {
+            //     OnSend();
+            // }
         }
 
         private void OnPlayerMessage(PlayerInfo player, string message)
         {
             string color ="#" + ColorUtility.ToHtmlStringRGBA(player.Color);
-            /*string prettyMessage = player.isLocalPlayer ?
-                $"<color=red>{player.Name}: </color> {message}" :
-                $"<color=blue>{player.Name}: </color> {message}";*/
             string prettyMessage = string.Format("<color={0}>[ {1} ]: {2}</color>", color, player.Name, message);
             if (player.isLocalPlayer)
             {
-                prettyMessage = "<b>" + prettyMessage + "</b>";
+                prettyMessage = "<i>" + prettyMessage + "</i>";
             }
             AppendMessage(prettyMessage);
 
