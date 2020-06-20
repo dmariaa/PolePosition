@@ -169,7 +169,7 @@ namespace PolePosition.UI
         
         public void UpdateNumDrivers(int drivers)
         {
-            _numPlayersToDrive.Value = drivers;
+            if(_numPlayersToDrive != null) _numPlayersToDrive.Value = drivers;
         }
 
         public void UpdateNumLaps(int laps)
