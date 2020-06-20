@@ -73,7 +73,7 @@ namespace PolePosition.Manager
                     (!_polePositionManager.TestMode && _numberOfPlayersInRace==1))
                 {
                     _polePositionManager.UpdatePlayersPositions(true);
-                    if (_numberOfPlayersInRace > 1)
+                    if (_polePositionManager.TestMode || _numberOfPlayersInRace > 1)
                     {
                         _polePositionManager.StateChange(new StateRaceFinished(_polePositionManager, true));    
                     }

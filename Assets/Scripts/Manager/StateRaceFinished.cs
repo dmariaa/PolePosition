@@ -19,28 +19,42 @@ namespace PolePosition.Manager
         public override void Enter()
         {
             _polePositionManager.FinishRace();
+
+            if (_qualifying)
+            {
+                _polePositionManager.RpcSetFinishTitle("Qualifying results", 65);
+            }
+            else
+            {
+                _polePositionManager.RpcSetFinishTitle("Race results", 65);
+                _polePositionManager.RpcSetFinishSubtitle("Race is over", 36);
+            }
+
+            _timer = 0;
         }
 
         public override void Update()
         {
             _timer += Time.deltaTime;
-                
-            if (_timer >= 15f)
+            
+            if (_qualifying)
             {
-                if(_qualifying)
+                if (_timer < 15.0f)
                 {
-                    _polePositionManager.StateChange(new StateInRace(_polePositionManager));
+                    _polePositionManager.RpcSetFinishSubtitle("RACE STARTS IN " + 
+                            Utils.FormatSeconds(15.0f - _timer, false), 36);
                 }
                 else
                 {
-                    _polePositionManager.StateChange(new StateInLobby(_polePositionManager));
+                    _polePositionManager.StateChange(new StateInRace(_polePositionManager));
                 }
             }
         }
 
         public override void Exit()
         {
-            // Nothing to do
+            _polePositionManager.RpcSetFinishTitle("", 65);
+            _polePositionManager.RpcSetFinishSubtitle("", 36);
         }
     }
 }

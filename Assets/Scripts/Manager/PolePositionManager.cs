@@ -436,6 +436,18 @@ namespace PolePosition.Manager
             uiManager.ActivateInGameHUD();
             uiManager.ShowPanelPositions(!qualifying);
         }
+
+        [ClientRpc]
+        public void RpcSetFinishTitle(string text, int size)
+        {
+            uiManager.SetPlayerResultsTitle(text, size);
+        }
+
+        [ClientRpc]
+        public void RpcSetFinishSubtitle(string text, int size)
+        {
+            uiManager.SetPlayerResultsSubtitle(text, size);    
+        }
         #endregion
 
         #region Hooks
@@ -454,7 +466,6 @@ namespace PolePosition.Manager
             uiManager.Lobby.UpdateQualificationLap(newValue);
         }
         
-
         #endregion
 
         [Command(ignoreAuthority = true)]

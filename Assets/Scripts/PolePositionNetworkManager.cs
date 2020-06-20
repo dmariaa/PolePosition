@@ -66,7 +66,7 @@ namespace PolePosition
         {
             base.OnClientDisconnect(conn);
             _polePositionManager.uiManager.ActivateMainMenu();
-            _polePositionManager.uiManager.ShowMainMenuMessage("No hay conexion con el servidor", 18, 5f);
+            _polePositionManager.uiManager.ShowMainMenuMessage("Disconnected from server", 18, 5f);
             _polePositionManager.uiManager.ClearPlayerResults();
             _polePositionManager.uiManager.Lobby.Clear();
             _polePositionManager.uiManager.ResetCamera();

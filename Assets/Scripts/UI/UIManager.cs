@@ -30,6 +30,9 @@ namespace PolePosition.UI
 
         [Header("Player Results")] [SerializeField]
         private GameObject _playerResults;
+
+        [SerializeField] private Text _resultsTitleText;
+        [SerializeField] private Text _resultsSubTitleText;
         [SerializeField] private GameObject _rankingPanel;
         [SerializeField] private PlayerResultsPanelController _playerResultsPanelController;
 
@@ -161,6 +164,22 @@ namespace PolePosition.UI
             {
                 Destroy(childPlayerResultsPanelController.gameObject);
             }
+        }
+
+        public void SetPlayerResultsTitle(string title, int size = 30)
+        {
+            if(_resultsTitleText != null) _resultsTitleText.text = title;
+        }
+
+        public void SetPlayerResultsSubtitle(string subtitle, int size = 30)
+        {
+            if(_resultsSubTitleText != null) _resultsSubTitleText.text = subtitle;
+        }
+
+        public void SetPlayerResultsTexts(string title, string subtitle, int titleSize = 30, int subTitleSize = 30)
+        {
+            SetPlayerResultsTitle(title, titleSize);
+            SetPlayerResultsSubtitle(subtitle, subTitleSize);
         }
 
         public void ShowPanelPositions(bool show)
