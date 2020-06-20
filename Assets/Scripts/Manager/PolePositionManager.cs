@@ -13,15 +13,28 @@ namespace PolePosition.Manager
     public class PolePositionManager : NetworkBehaviour
     {
         [SyncVar (hook = nameof (OnChangeMaxNumPlayers))]public int MaxNumPlayers;
-        private int _currentLobbyHostId = -1;
         [SyncVar(hook = nameof(OnChangeNumLaps))] public int NumberOfLaps = 4;
         [SyncVar(hook = nameof(OnChangeQualificationLap))] public bool QualificationLap = true;
-        
+
         public UIManager uiManager;
         public CircuitController m_CircuitController;
-        
         private PolePositionNetworkManager _polePositionNetworkManager;
 
+        /// <summary>
+        /// If test mode is active, races can be completed with only
+        /// one car. For debugging purposes.
+        /// </summary>
+        public bool TestMode = false;
+
+        /// <summary>
+        /// What player does own the lobby actually?
+        /// </summary>
+        private int _currentLobbyHostId = -1;
+
+        /// <summary>
+        /// This is the global GUID given to all players
+        /// so that they can see each other
+        /// </summary>
         private Guid _globalGuid;
         public Guid GlobalGUID
         {
@@ -55,10 +68,9 @@ namespace PolePosition.Manager
             if (uiManager == null) uiManager = FindObjectOfType<UIManager>();
             if (m_CircuitController == null) m_CircuitController = FindObjectOfType<CircuitController>();
             _polePositionNetworkManager = FindObjectOfType<PolePositionNetworkManager>();
-            
             _globalGuid = Guid.NewGuid();
         }
-
+        
         public override void OnStartClient()
         {
             base.OnStartClient();
@@ -74,7 +86,6 @@ namespace PolePosition.Manager
             {
                 CmdUpdateQualificationLap(value);
             };
-
         }
 
         public override void OnStartServer()

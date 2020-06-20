@@ -54,7 +54,8 @@ namespace PolePosition
 
         public Vector3 GetSegment(int idx)
         {
-            return m_PathPos[idx + 1] - m_PathPos[idx];
+            int next = (idx + 1) % CircuitNumberOfSegments;
+            return m_PathPos[next] - m_PathPos[idx];
         }
 
         public float ComputeClosestPointArcLength(Vector3 posIn, out Vector3 direccion, out int segIdx, out Vector3 posProjOut, out float distOut)

@@ -185,7 +185,14 @@ namespace PolePosition.UI
             _numPlayersToDrive.EnableNumberInputButtons(activate);
             _numLaps.EnableNumberInputButtons(activate);
             _qualificationLapController.interactable = activate;
+        }
 
+        public void Clear()
+        {
+            foreach (var connectionInfoController in _playersPanel.GetComponentsInChildren<ConnectionInfoController>())
+            {
+                Destroy(connectionInfoController.gameObject);
+            }
         }
     }
 }

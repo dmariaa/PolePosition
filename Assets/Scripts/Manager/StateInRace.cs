@@ -24,8 +24,7 @@ namespace PolePosition.Manager
         {
             _polePositionManager.DisablePlayersCollisions(false);
             _polePositionManager.RpcShowInGameHUD(false);
-            _numberOfPlayersInRace = _polePositionManager.Players.Count;
-            
+
             foreach (var player in _polePositionManager.Players.Values)
             {
                 Transform startPosition = NetworkManager.startPositions[player.CurrentPosition - 1];
@@ -53,6 +52,8 @@ namespace PolePosition.Manager
         public override void Update()
         {
             _countDownTimer += Time.deltaTime;
+            _numberOfPlayersInRace = _polePositionManager.Players.Count;
+            
             if (_countDownTimer >= 1f && _countDown > -1)
             {
                 _countDownTimer = 0f;
@@ -73,7 +74,8 @@ namespace PolePosition.Manager
                 int finishedPlayers = 0;
                 _polePositionManager.UpdateRaceProgress(_raceTimer, out finishedPlayers);
 
-                if (finishedPlayers == _numberOfPlayersInRace)
+                if (finishedPlayers == _numberOfPlayersInRace || 
+                    (_polePositionManager.TestMode && _numberOfPlayersInRace==1))
                 {
                     _polePositionManager.StateChange(new StateRaceFinished(_polePositionManager, false));
                 }

@@ -174,17 +174,17 @@ namespace PolePosition.Player
                     if (!Stopped && m_PlayerInfo.Direction < 0)
                     {
                         _wrongDirectionTimer += Time.deltaTime;
-                        if (_wrongDirectionTimer >= 0.5f)
+                        if (_wrongDirectionTimer >= 3f)
                         {
                             _setupPlayer.RpcUpdateHUDMessage2("Wrong Direction", 100);
                         }
                     
-                        if (_wrongDirectionTimer >= _maxWrongDirectionTime)
-                        {
-                            _wrongDirectionTimer = 0.0f;
-                            RelocateCarInTrack();
-                            _setupPlayer.RpcUpdateHUDMessage1("");
-                        }
+                        // if (_wrongDirectionTimer >= _maxWrongDirectionTime)
+                        // {
+                        //     _wrongDirectionTimer = 0.0f;
+                        //     RelocateCarInTrack();
+                        //     _setupPlayer.RpcUpdateHUDMessage1("");
+                        // }
                     }
                     else if (!Stopped && m_PlayerInfo.Direction > 0 && _wrongDirectionTimer > 0.0f)
                     {
@@ -197,7 +197,7 @@ namespace PolePosition.Player
                     {
                         if (InputBrake < 1.0f)
                         {
-                            _setupPlayer.RpcUpdateHUDMessage2("Crashed!\nPress brake to continue", 70);                                          
+                            _setupPlayer.RpcUpdateHUDMessage2("Crashed!\nPress brake to continue", 55);                                          
                         }
                         else
                         {

@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using PolePosition.Player;
+using UnityEngine;
 
 namespace PolePosition
 {
@@ -17,14 +18,24 @@ namespace PolePosition
 
         private Camera mainCamera;
 
+        private Vector3 _initialPosition;
+        private Quaternion _initialRotation;
+
         // Start is called before the first frame update
         void Start()
         {
             mainCamera = this.GetComponent<Camera>();
+            _initialPosition = transform.position;
+            _initialRotation = transform.rotation;
         }
 
         // Update is called once per frame
         void Update()
+        {
+            CalculateCameraPosition();
+        }
+
+        private void CalculateCameraPosition()
         {
             if (m_Focus != null)
             {
@@ -51,15 +62,21 @@ namespace PolePosition
                     Vector3 offset = this.m_Direction * this.m_Distance;
                     offset = new Vector3(offset.x, m_Elevation, offset.z);
 
-                    mainCamera.transform.position = m_Focus.transform.position + offset;
-                    mainCamera.transform.LookAt(m_Focus.transform.position);
+                    transform.position = m_Focus.transform.position + offset;
+                    transform.LookAt(m_Focus.transform.position);
                 }
                 else
                 {
-                    mainCamera.transform.position = m_Focus.transform.position + m_offset;
-                    mainCamera.transform.LookAt(m_Focus.transform.position);
+                    transform.position = m_Focus.transform.position + m_offset;
+                    transform.LookAt(m_Focus.transform.position);
                 }
             }
+        }
+
+        public void Reset()
+        {
+            transform.position = _initialPosition;
+            transform.rotation = _initialRotation;
         }
     }
 }

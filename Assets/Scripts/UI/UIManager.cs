@@ -16,6 +16,7 @@ namespace PolePosition.UI
         [SerializeField] private Button buttonClient;
         [SerializeField] private Button buttonServer;
         [SerializeField] private InputField inputFieldIP;
+        [SerializeField] private Text messageText;
 
         [Header("In-Game HUD")] [SerializeField]
         private GameObject inGameHUD;
@@ -32,6 +33,8 @@ namespace PolePosition.UI
         [SerializeField] private GameObject _rankingPanel;
         [SerializeField] private PlayerResultsPanelController _playerResultsPanelController;
 
+        private CameraController _camera;
+        
         private GameObject _lobby;
         public LobbyManager Lobby
         {
@@ -42,6 +45,7 @@ namespace PolePosition.UI
         {
             m_NetworkManager = FindObjectOfType<NetworkManager>();
             _lobby = transform.Find("Canvas/Lobby").gameObject;
+            _camera = FindObjectOfType<CameraController>();
         }
 
         private void Start()
@@ -166,6 +170,36 @@ namespace PolePosition.UI
         public void ShowPanelPositions(bool show)
         {
             panelPositions.gameObject.SetActive(show);
+        }
+
+        public void ResetCamera()
+        {
+            _camera.Reset();
+        }
+
+        private float _mainMenuMessageTimer = 0f;
+        private float _mainMenuMessageSeconds = 0f;
+
+        public void ShowMainMenuMessage(string message, int fontSize, float seconds)
+        {
+            _mainMenuMessageSeconds = seconds;
+            _mainMenuMessageTimer = Time.deltaTime;
+            messageText.text = message;
+            messageText.fontSize = fontSize;
+            messageText.transform.parent.gameObject.SetActive(true);
+        }
+
+        private void Update()
+        {
+            if (_mainMenuMessageTimer > 0f)
+            {
+                _mainMenuMessageTimer += Time.deltaTime;
+                if (_mainMenuMessageTimer >= _mainMenuMessageSeconds)
+                {
+                    _mainMenuMessageTimer = 0f;
+                    messageText.transform.parent.gameObject.SetActive(false);
+                }
+            }
         }
     }
 }
